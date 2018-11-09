@@ -1605,7 +1605,6 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
     uint16_t textColor  = ST7735_Color565(25, 255, 255);                //text color
     uint16_t selectColor= ST7735_Color565(0, 0, 0);
     uint16_t selectBack = ST7735_Color565(25, 255, 255);
-    uint8_t clearSprintf = 0;
     static uint8_t count = 0;
 
     char tempArray[6] , speedArray[6], timeArray[7];
@@ -1629,10 +1628,9 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
         count = 0;
         return 1;
     }
-
-    clearSprintf = sprintf(tempArray," %d C ",temp);
-    clearSprintf = sprintf(speedArray,"%d mph",speed);
-    clearSprintf = sprintf(timeArray, " 11:45 ");
+    sprintf(tempArray," %d C ",temp);
+    sprintf(speedArray,"%d mph",speed);
+    sprintf(timeArray, " 11:45 ");
     //sprintf(timeArray, "%d",)
 
 
