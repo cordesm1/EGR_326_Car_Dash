@@ -13,7 +13,7 @@
 uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed);
 uint8_t writeMenu(uint8_t select);
 uint8_t setTimeSubMenu(uint8_t select);
-void topBannerPrint(uint8_t temp, uint8_t speed);
+void topBannerPrint(uint8_t temp, uint8_t speed, uint8_t *timeArray);
 void systick_delay_ms(uint32_t delay_time); //Function to wait "delay_time" ms
 uint8_t hourCounter(uint8_t count, uint8_t sel, uint8_t digit);
 

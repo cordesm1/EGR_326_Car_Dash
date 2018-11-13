@@ -1442,6 +1442,7 @@ uint8_t setTimeSubMenu(uint8_t select)
         timeArray[timeInput] = count + 48;
 
        //prints "Set Time"
+       ystart = 35;
        while(i <s1)
        {
            xstart = 63-((s1*11)/2);
@@ -1524,7 +1525,7 @@ uint8_t hourCounter(uint8_t count, uint8_t sel, uint8_t digit)
         {
             //tens of minutes
             //can be 6 to 0
-            if (count == 6)
+            if (count == 5)
                 count = 0;                               //resets count to first option
             else count++;
         }
@@ -1573,7 +1574,7 @@ uint8_t hourCounter(uint8_t count, uint8_t sel, uint8_t digit)
             //tens of minutes
             //can be 6 to 0
             if (count == 0)
-                count = 6;                               //resets count to first option
+                count = 5;                               //resets count to first option
             else count--;
         }
         if(digit == 4)
@@ -1609,6 +1610,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
 
     char tempArray[6] , speedArray[6], timeArray[7];
 
+    if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
     //Ask someone why select was getting erased if the sprintf statements came first
     if(select == 1)
     {
@@ -1634,7 +1636,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
     //sprintf(timeArray, "%d",)
 
 
-    if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
+
     //start printing sequence
 
     if(count == 1)
@@ -1737,22 +1739,28 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-void topBannerPrint( uint8_t temp, uint8_t speed)
+void topBannerPrint( uint8_t temp, uint8_t speed, uint8_t *timeArray)
 {
     uint16_t bannerColor = 0x53FF, textColor = 0xFFFF;          //baige banner
     uint8_t xstart,ystart,y,i;
-    char  bannerText[11];
-    //only really need to draw the background of the banner once
-    for(i=0;i<10;i++)
-        ST7735_DrawFastHLine(0, i, 127, bannerColor);
+    char  bannerText[25];
 
-    sprintf(bannerText,"%d 11:45 %d",temp,speed);
+    //find spacing for printing banner if there are three digits in speed/temp
+    if(temp >= 100 && speed >= 100)
+        sprintf(bannerText,"%dmph   %d%d:%d%d   %dC  ",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+    else if(temp >= 100 || speed >= 100)
+        sprintf(bannerText,"%dmph   %d%d:%d%d    %dC  ",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+    else
+        sprintf(bannerText,"%dmph   %d%d:%d%d     %dC",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+
 
     ystart = 0;
+    i=0;
+    y=0;
        while(i < sizeof(bannerText))
        {
            xstart = 0;
-           ST7735_DrawCharS(xstart+(6*i),ystart+(y*9), bannerText[i], textColor, bannerColor, 1);
+           ST7735_DrawCharS(xstart+(6*i),ystart+(y*8), bannerText[i], textColor, bannerColor, 1);
            i++;
        }
 

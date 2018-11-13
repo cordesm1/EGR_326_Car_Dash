@@ -47,6 +47,7 @@ int main(void)
 
     uint8_t state  = 0, nextState = 0;//controls the state
     uint8_t userSelection = 0;
+    uint8_t timeArray[4] = {1,2,5,6};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
     MAP_Interrupt_enableMaster();           //enable interrupts
 
     while(1)
@@ -78,7 +79,6 @@ int main(void)
                 else
                     nextState = writeIdleScreen;
 
-
                 break;
 
             case writeSetTimeSubMenu:
@@ -99,7 +99,7 @@ int main(void)
         nextDirection = 0;
         //controling next state
         state = nextState;
-        topBannerPrint(22,72);
+        topBannerPrint(22,72,timeArray);
     }
 }
 
