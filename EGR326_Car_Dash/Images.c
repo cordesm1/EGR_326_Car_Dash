@@ -1598,7 +1598,7 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
+uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArray)
 {
     //need to figure out how to pass time in.
     uint8_t i=0, xstart=0, ystart=10, y=0;
@@ -1608,7 +1608,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
     uint16_t selectBack = ST7735_Color565(25, 255, 255);
     static uint8_t count = 0;
 
-    char tempArray[6] , speedArray[6], timeArray[7];
+    char tempArray[6] , speedArray[6], printTimeArray[7];
 
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
     //Ask someone why select was getting erased if the sprintf statements came first
@@ -1632,8 +1632,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
     }
     sprintf(tempArray," %d C ",temp);
     sprintf(speedArray,"%d mph",speed);
-    sprintf(timeArray, " 11:45 ");
-    //sprintf(timeArray, "%d",)
+    sprintf(printTimeArray, " %d%d:%d%d ",timeArray[0],timeArray[1],timeArray[2],timeArray[3]);
 
 
 
@@ -1643,10 +1642,10 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
     {
 
        ystart = 85;
-       while(i < sizeof(timeArray))
+       while(i < sizeof(printTimeArray))
        {
-           xstart = 63-((sizeof(timeArray)*16)/2);
-           ST7735_DrawCharS(xstart+(16*i),ystart+(y*25), timeArray[i], textColor, backGround, 3);
+           xstart = 63-((sizeof(printTimeArray)*16)/2);
+           ST7735_DrawCharS(xstart+(16*i),ystart+(y*25), printTimeArray[i], textColor, backGround, 3);
            i++;
        }
        i=0;
@@ -1688,10 +1687,10 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
        i=0;
        y=0;
        ystart = 30;
-       while(i < sizeof(timeArray))
+       while(i < sizeof(printTimeArray))
        {
-           xstart = 120-(sizeof(timeArray)*6*1);            //size of array times pixles of one box times text size
-           ST7735_DrawCharS(xstart+(6*i),ystart+(y*9), timeArray[i], textColor, backGround, 1);
+           xstart = 120-(sizeof(printTimeArray)*6*1);            //size of array times pixles of one box times text size
+           ST7735_DrawCharS(xstart+(6*i),ystart+(y*9), printTimeArray[i], textColor, backGround, 1);
            i++;
        }
     }
@@ -1708,10 +1707,10 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed)
        }
        i=0;
        ystart = 30;
-       while(i < sizeof(timeArray))
+       while(i < sizeof(printTimeArray))
        {
            xstart = 10;
-           ST7735_DrawCharS(xstart+(6*i),ystart+(y*9), timeArray[i], textColor, backGround, 1);
+           ST7735_DrawCharS(xstart+(6*i),ystart+(y*9), printTimeArray[i], textColor, backGround, 1);
            i++;
        }
        i=0;

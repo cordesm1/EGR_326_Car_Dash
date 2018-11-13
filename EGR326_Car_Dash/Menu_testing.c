@@ -56,7 +56,7 @@ int main(void)
         switch (state)
         {
             case writeIdleScreen:
-                userSelection = idleScreen(direction, 22, 72);
+                userSelection = idleScreen(direction, 22, 72,timeArray);
 
                 if(userSelection)
                      nextState = writeMainMenu;
@@ -85,7 +85,10 @@ int main(void)
                 userSelection = setTimeSubMenu(direction);
 
                 if (userSelection)
+                {
                     nextState = writeIdleScreen;
+                    //Send time to write to RTC here
+                }
                 break;
 
             default:
@@ -97,8 +100,15 @@ int main(void)
         //encoder direction setting
         direction = nextDirection;
         nextDirection = 0;
+        //every time the encoder nextdirection is not 0 reset a timer to count down from 1min
+        //if direction = 0 for a minute reset next state to the idle screen
+
+        //Read time and temp from RTC and set according vars
+        //        HERE
+
         //controling next state
         state = nextState;
+        //Print any updates to top banner
         topBannerPrint(22,72,timeArray);
     }
 }

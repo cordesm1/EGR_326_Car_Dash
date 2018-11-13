@@ -10,7 +10,7 @@
 #define IMAGES_H_
 
 //Menu prints
-uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed);
+uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArray);
 uint8_t writeMenu(uint8_t select);
 uint8_t setTimeSubMenu(uint8_t select);
 void topBannerPrint(uint8_t temp, uint8_t speed, uint8_t *timeArray);
