@@ -13,11 +13,11 @@
 #include <string.h>
 #include "ST7735.h"
 #include "Images.h"
+#include "RTC.h"
 
 #define writeIdleScreen     0
 #define writeMainMenu       1
 #define writeSetTimeSubMenu 2
-
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
@@ -49,6 +49,8 @@ int main(void)
     uint8_t userSelection = 0;
     uint8_t timeArray[4] = {1,2,5,6};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
     MAP_Interrupt_enableMaster();           //enable interrupts
+    buddyCorp();
+    __delay_cycles(48000000);
 
     while(1)
     {
@@ -211,6 +213,7 @@ void PORT6_IRQHandler(void)
             {
                 contact2 = 1;
             }
+
             if (contact1 == 1)
             {
                 contact2 = 2;
