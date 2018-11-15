@@ -1397,7 +1397,7 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t setTimeSubMenu(uint8_t select)
+uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime)
 {
     char menuItem [8][10] = {"Set Time", "x", "x ", "x"};                               //x's can be filled with other lines but add back s# with size
 
@@ -1435,6 +1435,17 @@ uint8_t setTimeSubMenu(uint8_t select)
             {
                timeInput=0;
                firstTimeBackground = 0;
+               for(i=0; i<5; i++)
+                   timeArray[i] = timeArray[i] - 48;
+               newTime[1] = ((timeArray[3]<<4)|timeArray[4]);                //minutes in BCD
+               newTime[2] = ((timeArray[0]<<4)|timeArray[1]);                //hours in BCD
+
+//               temp1 = ((timeArray[3]<<4)|timeArray[4]);                //minutes in BCD
+//               temp2 = ((timeArray[0]<<4)|timeArray[1]);                //hours in BCD
+//
+//               newTime[1] = temp1;
+//               newTime[2] = temp2;
+
                return (1);                      //after all time entries the next state is to write to RTC
             }
          }
@@ -1598,7 +1609,7 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArray)
+uint8_t idleScreen(uint8_t select, float temp, uint8_t speed,uint8_t *timeArray)
 {
     //need to figure out how to pass time in.
     uint8_t i=0, xstart=0, ystart=10, y=0;
@@ -1608,7 +1619,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArra
     uint16_t selectBack = ST7735_Color565(25, 255, 255);
     static uint8_t count = 0;
 
-    char tempArray[6] , speedArray[6], printTimeArray[7];
+    char tempArray[7] , speedArray[7], printTimeArray[7];
 
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
     //Ask someone why select was getting erased if the sprintf statements came first
@@ -1630,9 +1641,9 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArra
         count = 0;
         return 1;
     }
-    sprintf(tempArray," %d C ",temp);
-    sprintf(speedArray,"%d mph",speed);
-    sprintf(printTimeArray, " %d%d:%d%d ",timeArray[0],timeArray[1],timeArray[2],timeArray[3]);
+    sprintf(tempArray," %.1fC",temp);
+    sprintf(speedArray," %dmph",speed);
+    sprintf(printTimeArray, " %2x:%02x  ",timeArray[2],timeArray[1]);
 
 
 
@@ -1644,7 +1655,7 @@ uint8_t idleScreen(uint8_t select, uint8_t temp, uint8_t speed,uint8_t *timeArra
        ystart = 85;
        while(i < sizeof(printTimeArray))
        {
-           xstart = 63-((sizeof(printTimeArray)*16)/2);
+           xstart = 64-((sizeof(printTimeArray)*16)/2);
            ST7735_DrawCharS(xstart+(16*i),ystart+(y*25), printTimeArray[i], textColor, backGround, 3);
            i++;
        }
@@ -1738,7 +1749,7 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-void topBannerPrint( uint8_t temp, uint8_t speed, uint8_t *timeArray)
+void topBannerPrint(float temp, uint8_t speed, uint8_t *timeArray)
 {
     uint16_t bannerColor = 0x53FF, textColor = 0xFFFF;          //baige banner
     uint8_t xstart,ystart,y,i;
@@ -1746,11 +1757,11 @@ void topBannerPrint( uint8_t temp, uint8_t speed, uint8_t *timeArray)
 
     //find spacing for printing banner if there are three digits in speed/temp
     if(temp >= 100 && speed >= 100)
-        sprintf(bannerText,"%dmph   %d%d:%d%d   %dC  ",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+        sprintf(bannerText,"%.1fC  %2x:%02x  %dmph  ",temp,timeArray[2],timeArray[1],speed);
     else if(temp >= 100 || speed >= 100)
-        sprintf(bannerText,"%dmph   %d%d:%d%d    %dC  ",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+        sprintf(bannerText,"%.1fC   %2x:%02x  %dmph  ",temp,timeArray[2],timeArray[1],speed);
     else
-        sprintf(bannerText,"%dmph   %d%d:%d%d     %dC",temp,timeArray[0],timeArray[1],timeArray[2],timeArray[3],speed);
+        sprintf(bannerText,"%0.1fC   %2x:%02x   %dmph",temp,timeArray[2],timeArray[1],speed);
 
 
     ystart = 0;

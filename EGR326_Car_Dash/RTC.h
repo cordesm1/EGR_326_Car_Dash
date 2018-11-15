@@ -26,9 +26,12 @@
 //extern struct bcd initialize;
 //extern struct bcd read;
 
-void initRTC(void);                     //Must call to init RTC on P1.6 and P1.7
+void initRTC(void);                     //Must call to init RTC on P3.6 and P3.7
 void writeI2C(void);                    //writes date to the RTC
-//void readI2C(uint8_t mode);             //reads to from the RTC
+//void readI2C(uint8_t mode);           //reads to from the RTC
+void writeFullRTC(uint8_t *timeArray);  //writes all data to RTC
+void writeTimeOnly(uint8_t *timeArray); //writes only minutes and hours to RTC
+void readFullRTC(uint8_t *timeArray);   //reads all time and date from rtc
 void readTimeIn(uint8_t *timeArray);    //Reads only time in minutes and hours in
-uint8_t readRTCtemp(uint8_t RTCtemp);   //Reads only temperature
+float readRTCtemp(float RTCtemp);       //Reads only temperature
 #endif /* RTC_H_ */

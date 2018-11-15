@@ -33,13 +33,18 @@ int main(void)
     MAP_WDT_A_holdTimer(); // Stop Watchdog
     clockInit48MHzXTL(); //Sets MCLK and SMCLK to the external HFXT crystal
     MAP_CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_16);
-    SMCLKfreq=MAP_CS_getSMCLK(); // get SMCLK value to verify it was set to 12 MHz
+    SMCLKfreq=MAP_CS_getSMCLK(); // get SMCLK value to verify it was set to 3 MHz
     MCLKfreq=MAP_CS_getMCLK(); // get MCLK value and verify it also
     Systick_Init(); //Initilaizes SysTick Timer
     ST7735_InitR(INITR_REDTAB); //Initializes LCD
 
     //variabls
     uint8_t direction = 0;
+    uint8_t state  = 0, nextState = 0;//controls the state
+    uint8_t userSelection = 0;
+    uint8_t timeArray[7]      = {1,2,5,6,0,0,0};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
+    uint8_t writeTimeToRTC[7];                         //for writing time data to RTC.
+    float RTCtemp = 22.3;                        //used to take temperature from RTC and send to different functions
 
     //inits
     push_btn_init();
@@ -47,11 +52,10 @@ int main(void)
     initRTC();                         //starts RTC on P1.6 and P1.7
 
 
-    writeI2C();                        //just testing a write to RTC
+//    writeI2C();                        //just testing a write to RTC
+//    readFullRTC(timeArray);
+    readFullRTC(timeArray);
 
-    uint8_t state  = 0, nextState = 0;//controls the state
-    uint8_t userSelection = 0;
-    uint8_t timeArray[4] = {1,2,5,6};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
 
     MAP_Interrupt_enableMaster();           //enable interrupts
 
@@ -65,7 +69,7 @@ int main(void)
         switch (state)
         {
             case writeIdleScreen:
-                userSelection = idleScreen(direction, 22, 72,timeArray);
+                userSelection = idleScreen(direction, RTCtemp, 72,timeArray);
 
                 if(userSelection)
                      nextState = writeMainMenu;
@@ -91,11 +95,13 @@ int main(void)
                 break;
 
             case writeSetTimeSubMenu:
-                userSelection = setTimeSubMenu(direction);
+                userSelection = setTimeSubMenu(direction, writeTimeToRTC);
 
                 if (userSelection)
                 {
                     nextState = writeIdleScreen;
+                    writeTimeOnly(writeTimeToRTC);
+                    readTimeIn(timeArray);          //reads in RTC right after write becasue first read is garbage
                     //Send time to write to RTC here
                 }
                 break;
@@ -115,11 +121,12 @@ int main(void)
         //Read time and temp from RTC and set according vars
         //        HERE
         readTimeIn(timeArray);
+        RTCtemp = readRTCtemp(RTCtemp);
 
         //controling next state
         state = nextState;
         //Print any updates to top banner
-        topBannerPrint(22,72,timeArray);
+        topBannerPrint(RTCtemp,72,timeArray);
     }
 }
 

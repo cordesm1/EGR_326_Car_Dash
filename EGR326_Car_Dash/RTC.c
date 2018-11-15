@@ -15,7 +15,7 @@ const eUSCI_I2C_MasterConfig i2cConfig =
 {
      EUSCI_B_I2C_CLOCKSOURCE_SMCLK, // SMCLK Clock Source
      3000000, // SMCLK = 3MHz
-     EUSCI_B_I2C_SET_DATA_RATE_400KBPS, // Desired I2C Clock of 100khz
+     EUSCI_B_I2C_SET_DATA_RATE_100KBPS, // Desired I2C Clock of 100khz
      0, // No byte counter threshold
      EUSCI_B_I2C_NO_AUTO_STOP // No Autostop
 };
@@ -48,7 +48,7 @@ void writeI2C(void)
 
     MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE, 0x11); // write to months register
 
-    MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, 18); // write to year register and send stop
+    MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, 0x18); // write to year register and send stop
 
     //readI2C(1); //Reads the time from the RTC to fix bug with first read being garbage
 }
@@ -123,7 +123,7 @@ void readTimeIn(uint8_t *timeArray)
     timeArray[2] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE);//hours
 }
 
-uint8_t readRTCtemp(uint8_t RTCtemp)
+float readRTCtemp(float RTCtemp)
 {
     // Set Master in transmit mode
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
@@ -161,3 +161,78 @@ void initRTC(void)
     MAP_I2C_enableModule(EUSCI_B2_BASE); //Starts the I2C Module Communication
 }
 
+/******************************
+ Name:         readFullRTC
+ Description:  reads in all time registers from RTC
+ Input:        timeArray =  holds all time and date vars for RTC
+ Output:       none
+ Source(s):    Some of this code is taken from Dr. Krug's Lecture 7 for EGR326-10 Fall 2018
+ *******************************/
+void readFullRTC(uint8_t *timeArray)
+{
+    int i = 0;
+
+    // Set Master in transmit mode
+    MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
+    // Wait for bus release, ready to write
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));
+    // set pointer to minutes
+    MAP_I2C_masterSendSingleByte(EUSCI_B2_BASE,0);
+    // Wait for bus release
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));
+    // Set Master in receive mode
+    MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_RECEIVE_MODE);
+    // Wait for bus release, ready to receive
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));
+    // read from RTC registers (pointer auto increments after each read)
+    for(i = 0; i<6; i++)
+        timeArray[i] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE); //writes seconds to year in the RTC
+}
+
+
+void writeFullRTC(uint8_t *timeArray)
+{
+    uint8_t garbageRead[7];
+    //just set random values while testing the write
+    MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);  //Set Master in transmit mode
+
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));   // Wait for bus release, ready to write
+
+    MAP_I2C_masterSendMultiByteStart(EUSCI_B2_BASE,0); // set pointer to beginning of RTC registers
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[0]);   // and write to seconds register
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[1]); // write to minutes register
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[2]); // write to hours register
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[3]); // write to day register
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[4]); // write to date register
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE,   timeArray[5]); // write to months register
+
+    MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, timeArray[6]); // write to year register and send stop
+
+    readFullRTC(garbageRead);
+
+}
+
+
+void writeTimeOnly(uint8_t *timeArray)
+{
+    uint8_t hours, mins;
+    mins = timeArray[1];
+    hours = timeArray[2];
+
+
+    MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);  //Set Master in transmit mode
+
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));   // Wait for bus release, ready to write
+
+    MAP_I2C_masterSendMultiByteStart(EUSCI_B2_BASE,1); // set pointer to beginning of RTC registers
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE, mins);   // write to minutes register
+
+    MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, hours); // write to year register and send stop
+}
