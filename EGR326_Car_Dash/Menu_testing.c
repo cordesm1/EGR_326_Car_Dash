@@ -32,7 +32,7 @@ int main(void)
 {
     MAP_WDT_A_holdTimer(); // Stop Watchdog
     clockInit48MHzXTL(); //Sets MCLK and SMCLK to the external HFXT crystal
-    MAP_CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_4);
+    MAP_CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_16);
     SMCLKfreq=MAP_CS_getSMCLK(); // get SMCLK value to verify it was set to 12 MHz
     MCLKfreq=MAP_CS_getMCLK(); // get MCLK value and verify it also
     Systick_Init(); //Initilaizes SysTick Timer
@@ -44,13 +44,20 @@ int main(void)
     //inits
     push_btn_init();
     rotaryPinInit();                   //init rotary encoder
+    initRTC();                         //starts RTC on P1.6 and P1.7
+
+
+    writeI2C();                        //just testing a write to RTC
 
     uint8_t state  = 0, nextState = 0;//controls the state
     uint8_t userSelection = 0;
     uint8_t timeArray[4] = {1,2,5,6};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
+
     MAP_Interrupt_enableMaster();           //enable interrupts
+
+    //Print Splash Screen
     buddyCorp();
-    __delay_cycles(48000000);
+    systick_delay_ms(1000);                 //delay to see splash screen for 1s
 
     while(1)
     {
@@ -107,6 +114,7 @@ int main(void)
 
         //Read time and temp from RTC and set according vars
         //        HERE
+        readTimeIn(timeArray);
 
         //controling next state
         state = nextState;
