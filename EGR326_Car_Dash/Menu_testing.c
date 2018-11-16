@@ -18,6 +18,7 @@
 #define writeIdleScreen     0
 #define writeMainMenu       1
 #define writeSetTimeSubMenu 2
+#define writeDateSetSubMenu 3
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
@@ -84,7 +85,7 @@ int main(void)
                 else if(userSelection == 1)
                     nextState = writeSetTimeSubMenu;
                 else if(userSelection == 2)
-                    nextState = writeIdleScreen;//nextState = something
+                    nextState = writeDateSetSubMenu;//nextState = write the date to RTC
                 else if(userSelection == 3)
                     nextState = writeIdleScreen;//nextState = something
                 else if(userSelection == 4)
@@ -93,6 +94,7 @@ int main(void)
                     nextState = writeIdleScreen;
 
                 break;
+
 
             case writeSetTimeSubMenu:
                 userSelection = setTimeSubMenu(direction, writeTimeToRTC, timeArray);
@@ -105,6 +107,18 @@ int main(void)
                     //Send time to write to RTC here
                 }
                 break;
+
+            case writeDateSetSubMenu:
+                userSelection = setDateSubMenu(direction, writeTimeToRTC);
+
+                if(userSelection == 1)
+                {
+                    nextState = writeIdleScreen;
+                    //write new date to RTC
+                }
+
+                break;
+
 
             default:
                 ;//do nothing

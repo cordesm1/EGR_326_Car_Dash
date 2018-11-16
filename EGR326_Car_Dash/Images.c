@@ -1617,6 +1617,24 @@ return (count);
 }
 
 /******************************
+Name:         setDateSubMenu
+Description:  prints set date sub Menu
+Input:        select  = determines direction of inputs
+              NewDate =  holds values for the RTC
+Output:       none
+Source(s):
+*******************************/
+uint8_t setDateSubMenu(uint8_t select , uint8_t *newDate)
+{
+    return (1);//sends back to idle for now
+}
+
+
+
+
+
+
+/******************************
 Name:         idleScreen
 Description:  prints idle screen and switches emphisis from speed/time/temp
 Input:        select = determines direction of inputs
