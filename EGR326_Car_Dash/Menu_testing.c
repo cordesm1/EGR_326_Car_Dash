@@ -22,7 +22,8 @@
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
-uint8_t contact1 = 0, contact2 = 0, direction = 0;
+uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
+uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
 
 void clockInit48MHzXTL(void); //Function to set the clk to 48MHz external
 void PORT1_IRQHandler(void);  //for both on board pushbuttons
@@ -33,8 +34,8 @@ int main(void)
 {
     MAP_WDT_A_holdTimer(); // Stop Watchdog
     clockInit48MHzXTL(); //Sets MCLK and SMCLK to the external HFXT crystal
-    MAP_CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_16);
-    SMCLKfreq=MAP_CS_getSMCLK(); // get SMCLK value to verify it was set to 3 MHz
+    MAP_CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_4);
+    SMCLKfreq=MAP_CS_getSMCLK(); // get SMCLK value to verify it was set to 12 MHz
     MCLKfreq=MAP_CS_getMCLK(); // get MCLK value and verify it also
     Systick_Init(); //Initilaizes SysTick Timer
     ST7735_InitR(INITR_REDTAB); //Initializes LCD
@@ -51,6 +52,9 @@ int main(void)
     push_btn_init();
     rotaryPinInit();                   //init rotary encoder
     initRTC();                         //starts RTC on P1.6 and P1.7
+    void initMotorPWM(void);           //init PWM for motor
+    void initTimer32For100us(void);    //init Timer32 for 100us interrupt rate
+    void initHallEffectPins(void);
 
 
 //    writeI2C();                        //just testing a write to RTC
@@ -261,5 +265,19 @@ void PORT6_IRQHandler(void)
         nextDirection = 3;      //if the btn is pushed
     }
 
+    if (status & GPIO_PIN3)
+    {
+        hallEffectMagnetCounts++;
+    }
 }
 
+
+void T32_INT1_IRQHandler(void)
+{
+    MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
+    speed = hallEffectMagnetCounts;
+    hallEffectMagnetCounts = 0;
+    MAP_Timer32_setCount(TIMER32_BASE,4800000);
+    MAP_Timer32_startTimer(TIMER32_BASE, true);
+
+}

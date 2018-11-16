@@ -14,7 +14,7 @@
 const eUSCI_I2C_MasterConfig i2cConfig =
 {
      EUSCI_B_I2C_CLOCKSOURCE_SMCLK, // SMCLK Clock Source
-     3000000, // SMCLK = 3MHz
+     12000000, // SMCLK = 12MHz
      EUSCI_B_I2C_SET_DATA_RATE_100KBPS, // Desired I2C Clock of 100khz
      0, // No byte counter threshold
      EUSCI_B_I2C_NO_AUTO_STOP // No Autostop
