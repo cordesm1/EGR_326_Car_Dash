@@ -30,7 +30,7 @@ uint32_t speed = 0, count = 0;
 void initMotorPWM(void)
 {
     MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN4, GPIO_PRIMARY_MODULE_FUNCTION);
-    MAP_Timer_A_generatePWM(TIMER_A0_BASE, pwmConfig);                                   //2.4 PWM pin for motor
+    MAP_Timer_A_generatePWM(TIMER_A0_BASE, &pwmConfig);                                   //2.4 PWM pin for motor
 }
 
 
@@ -123,3 +123,64 @@ void changeMotorPWMspeed(uint8_t motorSpeed)
 //    MAP_Timer32_startTimer(TIMER32_BASE, true);
 //
 //}
+
+void initSpeedometer(void)
+{
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P10, GPIO_PIN1+GPIO_PIN2+GPIO_PIN3+GPIO_PIN4);    //Sets up output pins for the motor
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN1+GPIO_PIN2+GPIO_PIN3+GPIO_PIN4); //Sets all pins to low to start
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN1+GPIO_PIN3);    //Turns on one pin for each coil of the motor
+    driveMotor(160);
+    driveMotor(0);
+}
+
+void driveMotor(int newSpeed)
+{
+    static int oldSpeed = 0;
+
+    int cycles = newSpeed-oldSpeed;
+
+    oldSpeed = newSpeed;
+
+
+    if(cycles > 0)
+    {
+
+        while(cycles > 0)
+            {
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN1);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN2);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN3);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN4);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN2);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN1);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN4);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN3);
+            _delay_cycles(24000);
+            cycles--;
+            }
+    }
+
+    if(cycles < 0)
+    {
+        cycles = cycles *(-1);
+    while(cycles > 0)
+        {
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN3);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN4);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN1);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN2);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN4);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN3);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P10, GPIO_PIN2);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P10, GPIO_PIN1);
+    _delay_cycles(24000);
+    cycles--;
+        }
+    }
+}
