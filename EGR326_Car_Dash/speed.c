@@ -23,8 +23,8 @@ Timer_A_PWMConfig pwmConfig =
  0
 };
 
-uint8_t button = 0, config = 0;
-uint32_t speed = 0, count = 0;
+//uint8_t button = 0, config = 0;
+//uint32_t speed = 0, count = 0;
 
 
 void initMotorPWM(void)

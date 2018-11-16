@@ -14,6 +14,7 @@
 #include "ST7735.h"
 #include "Images.h"
 #include "RTC.h"
+#include "speed.h"
 
 #define writeIdleScreen     0
 #define writeMainMenu       1
@@ -52,13 +53,14 @@ int main(void)
     push_btn_init();
     rotaryPinInit();                   //init rotary encoder
     initRTC();                         //starts RTC on P1.6 and P1.7
-    void initMotorPWM(void);           //init PWM for motor
-    void initTimer32For100us(void);    //init Timer32 for 100us interrupt rate
-    void initHallEffectPins(void);
+    initMotorPWM();           //init PWM for motor
+    initTimer32For100us();    //init Timer32 for 100us interrupt rate
+    initHallEffectPins();     //init just read the name
+
+    //for testing speed read
+    changeMotorPWMspeed(2);            //Sets to mid speed
 
 
-//    writeI2C();                        //just testing a write to RTC
-//    readFullRTC(timeArray);
     readFullRTC(timeArray);
 
 
@@ -74,7 +76,7 @@ int main(void)
         switch (state)
         {
             case writeIdleScreen:
-                userSelection = idleScreen(direction, RTCtemp, 72,timeArray);
+                userSelection = idleScreen(direction, RTCtemp, speed ,timeArray);
 
                 if(userSelection)
                      nextState = writeMainMenu;
@@ -144,7 +146,7 @@ int main(void)
         //controling next state
         state = nextState;
         //Print any updates to top banner
-        topBannerPrint(RTCtemp,72,timeArray);
+        topBannerPrint(RTCtemp,speed,timeArray);
     }
 }
 
@@ -238,11 +240,12 @@ void PORT6_IRQHandler(void)
 
     if (status & GPIO_PIN1) //If P4.1 caused the interrupt
         {
-        if(contact1 == 2){
-                    contact1 = 0;
-                    contact2 = 0;
-                }
-        if ((contact1) == 0)
+            if(contact1 == 2)
+            {
+                contact1 = 0;
+                contact2 = 0;
+            }
+            if ((contact1) == 0)
             {
                 contact2 = 1;
             }
