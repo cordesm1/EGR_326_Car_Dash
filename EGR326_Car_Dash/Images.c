@@ -1307,7 +1307,7 @@ Source(s):    none
 uint8_t writeMenu(uint8_t select)
 {
 
-    char menuItem [4][10] = {"Set Time","Temp Set","Error Log","Extra"};
+    char menuItem [4][10] = {"Set Time","Set Date","Error Log","Extra"};
     uint8_t i=0, xstart=0, ystart=10, y=0;
     uint8_t s1=8 , s2=8, s3=9, s4=5, lines = 4;                         //represents the size of the menu option to keep them centered
     uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
@@ -1397,11 +1397,12 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime)
+uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime, uint8_t *oldTime)
 {
     char menuItem [8][10] = {"Set Time", "x", "x ", "x"};                               //x's can be filled with other lines but add back s# with size
 
     static char timeArray [5] = {'0','0',':','0','0'};                                 //need to get this info to/from RTC
+    static uint8_t currentTime[4];
 
        uint8_t i=0, xstart=0, ystart=10, y=0;
        uint8_t s1=8,timeValues = 5, lines = 4;                                    //represents the size of the menu option to keep them centered
@@ -1416,7 +1417,13 @@ uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime)
        {
            // set TimeArray = to read in time from RTC or always start at zeros
            memset(timeArray, '0',sizeof(timeArray));                                                   //reset time so user can enter it
-           timeArray[2] = ':';
+           currentTime[0] = (oldTime[2]&0xF0)>>4;
+           currentTime[1] = (oldTime[2]&0x0F);
+           currentTime[2] = (oldTime[1]&0xF0)>>4;
+           currentTime[3] = (oldTime[1]&0x0F);
+
+           sprintf(timeArray,"%d%d:%d%d",currentTime[0],currentTime[1],currentTime[2],currentTime[3]);
+           count = currentTime[timeInput];
            ST7735_FillScreen(ST7735_Color565(0, 0, 0));  firstTimeBackground++;                     //Background for whole screen only the first time
        }
 
@@ -1426,11 +1433,16 @@ uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime)
        //3 indicates a button press and should go to next state depending on option selected
         if(select == 3)
         {
-            count = 0;
             if(timeInput == 1)
                timeInput = timeInput+2;
             else timeInput ++;
-            //another count that will
+
+            //sets current time to counters
+            if(timeInput==3 || timeInput == 4)
+                count = currentTime[timeInput-1];
+            else
+                count = currentTime[timeInput];
+
             if(timeInput == 5)
             {
                timeInput=0;
@@ -1449,6 +1461,7 @@ uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime)
                return (1);                      //after all time entries the next state is to write to RTC
             }
          }
+
 
         timeArray[timeInput] = count + 48;
 
@@ -1500,6 +1513,10 @@ uint8_t hourCounter(uint8_t count, uint8_t sel, uint8_t digit)
 {
     static uint8_t tensOfHours = 0;         //used to limit the hours if tens of hours is 1
 
+    if(digit == 0 && count == 1)
+        tensOfHours = 1;
+
+
     if(sel == 1)
     {
         if(digit == 0)
@@ -1521,7 +1538,7 @@ uint8_t hourCounter(uint8_t count, uint8_t sel, uint8_t digit)
             //hours : can only be 0,1,2 if the first digit is a 1 otherwise can be 0-9
             if(tensOfHours)// can only be 0-2
             {
-                if(count == 2)
+                if(count >= 2)
                     count = 0;
                 else count++;
             }

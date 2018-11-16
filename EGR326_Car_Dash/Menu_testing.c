@@ -95,7 +95,7 @@ int main(void)
                 break;
 
             case writeSetTimeSubMenu:
-                userSelection = setTimeSubMenu(direction, writeTimeToRTC);
+                userSelection = setTimeSubMenu(direction, writeTimeToRTC, timeArray);
 
                 if (userSelection)
                 {
