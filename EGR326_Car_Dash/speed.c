@@ -11,6 +11,7 @@
 
 #include <driverlib.h>
 #include "speed.h"
+#include "Images.h"
 
 
 Timer_A_PWMConfig pwmConfig =
@@ -60,7 +61,6 @@ void initHallEffectPins(void)
 
 void changeMotorPWMspeed(uint8_t motorSpeed)
 {
-
     if(motorSpeed == 0) //set Duty Cycle to 0 for stop
     {
         TIMER_A0-> CCR[1] = 0;
@@ -77,10 +77,6 @@ void changeMotorPWMspeed(uint8_t motorSpeed)
     {
         TIMER_A0-> CCR[1] = 18750;
     }
-
-
-
-
 }
 
 

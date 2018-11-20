@@ -56,6 +56,7 @@ int main(void)
     initMotorPWM();           //init PWM for motor
     initTimer32For100us();    //init Timer32 for 100us interrupt rate
     initHallEffectPins();     //init just read the name
+    initSpeedometer();        //init just read name
 
     //for testing speed read
     changeMotorPWMspeed(2);            //Sets to mid speed
@@ -147,6 +148,9 @@ int main(void)
         state = nextState;
         //Print any updates to top banner
         topBannerPrint(RTCtemp,speed,timeArray);
+
+        //Change speedometer
+        driveMotor(speed);
     }
 }
 
