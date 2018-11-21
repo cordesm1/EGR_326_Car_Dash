@@ -15,6 +15,7 @@
 #include "Images.h"
 #include "RTC.h"
 #include "speed.h"
+#include "ultraSonic.h"
 
 #define writeIdleScreen     0
 #define writeMainMenu       1
@@ -25,6 +26,11 @@ uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
 uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
+
+//UltraSonic Vars
+uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
+uint8_t triggerFinished = 0;                     //starts trigger for ultra sonic
+
 
 void clockInit48MHzXTL(void); //Function to set the clk to 48MHz external
 void PORT1_IRQHandler(void);  //for both on board pushbuttons
@@ -43,6 +49,7 @@ int main(void)
 
     //variabls
     uint8_t direction = 0;
+    int bumperDistance = 0;
     uint8_t state  = 0, nextState = 0;//controls the state
     uint8_t userSelection = 0;
     uint8_t timeArray[7]      = {1,2,5,6,0,0,0};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
@@ -58,11 +65,17 @@ int main(void)
     initHallEffectPins();     //init just read the name
     initSpeedometer();        //init just read name
 
+    //First Time ultraSonic
+    timerA2_init();           //init Timer A2 for ultrasonic
+    ultraSonicPinInit();      //init trig pins and LEDs for ultrasonic
+    MAP_Timer_A_startCounter(TIMER_A2_BASE, TIMER_A_CONTINUOUS_MODE);
+    triggerUltraSonic();    //trig pin for 10us
+
     //for testing speed read
     changeMotorPWMspeed(2);            //Sets to mid speed
 
 
-    readFullRTC(timeArray);
+    readFullRTC(timeArray);            //Gets init time from RTC
 
 
     MAP_Interrupt_enableMaster();           //enable interrupts
@@ -90,7 +103,7 @@ int main(void)
                 if(userSelection == 0)
                     nextState = writeMainMenu;
                 else if(userSelection == 1)
-                    nextState = writeSetTimeSubMenu;
+                    nextState = writeSetTimeSubMenu;//next state = write set time
                 else if(userSelection == 2)
                     nextState = writeDateSetSubMenu;//nextState = write the date to RTC
                 else if(userSelection == 3)
@@ -140,17 +153,34 @@ int main(void)
         //if direction = 0 for a minute reset next state to the idle screen
 
         //Read time and temp from RTC and set according vars
-        //        HERE
         readTimeIn(timeArray);
         RTCtemp = readRTCtemp(RTCtemp);
 
-        //controling next state
+        //controlling next state
         state = nextState;
         //Print any updates to top banner
-        topBannerPrint(RTCtemp,speed,timeArray);
-
+        if(state != writeIdleScreen)
+        {
+            topBannerPrint(RTCtemp,speed,timeArray);
+        }
         //Change speedometer
         driveMotor(speed);
+
+
+        //Ultra Sonic
+        if(triggerFinished)
+        {
+            bumperDistance =  ((ultraSonicRead2*10)/12) /58;
+            //Changes LED
+            if(bumperDistance >= 200) {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);}
+            if(bumperDistance < 200)  {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);}
+
+            triggerUltraSonic();    //trig pin for 10us
+            triggerFinished = 0;
+
+        }
+
+
     }
 }
 
@@ -281,10 +311,39 @@ void PORT6_IRQHandler(void)
 
 void T32_INT1_IRQHandler(void)
 {
+    //100us Timer interrupt
     MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
     speed = hallEffectMagnetCounts;
     hallEffectMagnetCounts = 0;
     MAP_Timer32_setCount(TIMER32_BASE,4800000);
     MAP_Timer32_startTimer(TIMER32_BASE, true);
 
+}
+
+
+//Interrupts
+void TA2_N_IRQHandler(void)
+{
+    int rising = 0;
+    if (TIMER_A2->CCTL[1] & BIT0) // Timer A2.1 on p5.6 was the cause. This is setup as a capture
+        MAP_Timer_A_clearCaptureCompareInterrupt(TIMER_A2_BASE,TIMER_A_CAPTURECOMPARE_REGISTER_1);// clear timer_A interrupt flag on 2.1
+
+    if(P5->IN&BIT6) rising=1; else rising=0; // check for rising or falling edge on input
+
+    if(rising)
+    {
+        //ultraSonicRead1 = MAP_Timer_A_getCaptureCompareCount(TIMER_A2_BASE,TIMER_A_CAPTURECOMPARE_REGISTER_1); // read timer_A value
+        //this value multiplied by 166.7nS gives time but dont forget the time is double because it travels there and back
+        ultraSonicRead1 = 0;
+        MAP_Timer_A_stopTimer(TIMER_A2_BASE);
+        TA2R = 0;
+        MAP_Timer_A_startCounter(TIMER_A2_BASE, TIMER_A_CONTINUOUS_MODE);
+
+    }
+    if(!rising)
+    {
+        ultraSonicRead2 = MAP_Timer_A_getCaptureCompareCount(TIMER_A2_BASE,TIMER_A_CAPTURECOMPARE_REGISTER_1); // read timer_A value
+        if(ultraSonicRead2 < ultraSonicRead1) ultraSonicRead2 =+ 65536;             //change this to check overflow bit and reset it
+        triggerFinished = 1;          //Tells main to calculate difference and find distance
+    }
 }

@@ -56,6 +56,32 @@ void systick_delay_ms(uint32_t delay_time)
 
 }
 
+/******************************
+Name:         systick_delay_us
+Description:  waits a inputed amount of us, max input is 349525us
+Input:        "delay_time" is the amount of us to delay for
+Output:       none
+Source(s):    none
+*******************************/
+void systick_delay_us(uint32_t delay_time)
+{
+    //delay_time = delay_time*3;  //Converts delay_time to cycles in us
+
+    SysTick->LOAD = (delay_time*48);   //Loads the remaining cycles to the systick timer
+    SysTick->VAL = 0;   //Clears the counter to restart
+
+    while (delay_time > 16777215)   //While the delay_time is longer than the max reload of the systick timer
+        {
+            SysTick->LOAD = (16777215); //Loads Systick to max reload
+            SysTick->VAL = 0;   //Clears the counter to restart
+
+            while ((SysTick->CTRL & 0x00010000) == 0);  //Waits until timer runs out
+            delay_time = delay_time - 16777215; //Subtracts one full reload of the systick from the delay_time
+        }
+
+    while ((SysTick->CTRL & 0x00010000) == 0);  //Waits until the timer runs out
+
+}
 
 /******************************
 Name:         writeEGR
@@ -1629,11 +1655,6 @@ uint8_t setDateSubMenu(uint8_t select , uint8_t *newDate)
     return (1);//sends back to idle for now
 }
 
-
-
-
-
-
 /******************************
 Name:         idleScreen
 Description:  prints idle screen and switches emphisis from speed/time/temp
@@ -1859,8 +1880,6 @@ void countCorners(void)
         }
                 i=0;
 }
-
-
 
 /******************************
 Name:         buddyCorp
@@ -3075,8 +3094,9 @@ void buddyCorp(void)
     };
     ST7735_DrawBitmap(4,159, BuddyCorp, 120, 160);
 }
+
 /******************************
- Name:         RotaryPinInit
+Name:         RotaryPinInit
  Description:  Initializes all output, and input pins for the rotary encoder
                Dont Forget to init the interrupts as well
  Input:        none
