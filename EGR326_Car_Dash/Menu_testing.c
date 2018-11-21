@@ -16,6 +16,7 @@
 #include "RTC.h"
 #include "speed.h"
 #include "ultraSonic.h"
+#include "alarms.h"
 
 #define writeIdleScreen     0
 #define writeMainMenu       1
@@ -31,6 +32,8 @@ uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for c
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
 uint8_t triggerFinished = 0;                     //starts trigger for ultra sonic
 
+//Alarm variables
+uint8_t alarmData[35];
 
 void clockInit48MHzXTL(void); //Function to set the clk to 48MHz external
 void PORT1_IRQHandler(void);  //for both on board pushbuttons
@@ -54,7 +57,8 @@ int main(void)
     uint8_t userSelection = 0;
     uint8_t timeArray[7]      = {1,2,5,6,0,0,0};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
     uint8_t writeTimeToRTC[7];                         //for writing time data to RTC.
-    float RTCtemp = 22.3;                        //used to take temperature from RTC and send to different functions
+    float RTCtemp = 22.3;                              //used to take temperature from RTC and send to different functions
+    uint8_t tempAlarmCheck = 0;                        //used so that only one alarm is triggered once
 
     //inits
     push_btn_init();
@@ -177,8 +181,20 @@ int main(void)
 
             triggerUltraSonic();    //trig pin for 10us
             triggerFinished = 0;
-
         }
+
+
+
+        if(RTCtemp <= 43)
+            tempAlarmCheck=1;
+        if(RTCtemp > 43 && tempAlarmCheck)
+        {
+            //send alarm to save in flash
+            sprintf(alarmData,"%02x/%02x/%02x at %02x:%02x", timeArray[5],timeArray[4],timeArray[6],  timeArray[2],timeArray[1]);
+            saveToFlash(alarmData, 1 );        //write a temp alarm to flash
+            tempAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
+        }
+
 
 
     }
@@ -224,7 +240,7 @@ void push_btn_init(void)
 
 
 
-//interrupts
+/*-------------------------------------------------------------INTERRUPTS-------------------------------------------------------------*/
 
 
 
