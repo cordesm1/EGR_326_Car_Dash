@@ -22,6 +22,7 @@
 #define writeMainMenu       1
 #define writeSetTimeSubMenu 2
 #define writeDateSetSubMenu 3
+#define writeErrorLogMenu   4
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
@@ -81,6 +82,9 @@ int main(void)
 
     readFullRTC(timeArray);            //Gets init time from RTC
 
+    timeArray[6] = 0x18;               //the year does not seem to be staying
+    writeFullRTC(timeArray);           //Just for setting up the RTC properly
+
 
     MAP_Interrupt_enableMaster();           //enable interrupts
 
@@ -111,7 +115,7 @@ int main(void)
                 else if(userSelection == 2)
                     nextState = writeDateSetSubMenu;//nextState = write the date to RTC
                 else if(userSelection == 3)
-                    nextState = writeIdleScreen;//nextState = something
+                    nextState = writeErrorLogMenu;//nextState = something
                 else if(userSelection == 4)
                     nextState = writeIdleScreen;//nextState = something
                 else
@@ -143,6 +147,15 @@ int main(void)
 
                 break;
 
+            case writeErrorLogMenu:
+                userSelection = writeErrorMenu(direction);
+
+                if(userSelection == 1)
+                    nextState = writeIdleScreen;//Write Temp error log
+                if(userSelection == 2)
+                    nextState = writeIdleScreen;//write Speed error logs
+
+                break;
 
             default:
                 ;//do nothing
@@ -185,7 +198,7 @@ int main(void)
 
 
 
-        if(RTCtemp <= 43)
+        if(RTCtemp <= 43)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
             tempAlarmCheck=1;
         if(RTCtemp > 43 && tempAlarmCheck)
         {

@@ -1323,6 +1323,7 @@ void heihei()
     };
     ST7735_DrawBitmap(4,159, Calvin, 120, 160);
 }
+
 /******************************
 Name:         writeMenu
 Description:  prints a menu to the LCD
@@ -1793,6 +1794,76 @@ uint8_t idleScreen(uint8_t select, float temp, uint8_t speed,uint8_t *timeArray)
 
 
     return(0);
+}
+
+/******************************
+Name:         writeErrorMenu
+Description:  prints error log optoins
+Input:        select = rotoray encoder selections
+Output:       none
+Source(s):    none
+*******************************/
+uint8_t writeErrorMenu(uint8_t select)
+{
+
+    char menuItem [2][10] = {"Temp Log","Speed Log"};
+    uint8_t i=0, xstart=0, ystart=10, y=0;
+    uint8_t s1=8 , s2=9, lines = 2;                         //represents the size of the menu option to keep them centered
+    uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
+    uint16_t textColor  = ST7735_Color565(25, 255, 255);                //text color
+    uint16_t selectColor= ST7735_Color565(0, 0, 0);
+    uint16_t selectBack = ST7735_Color565(25, 255, 255);
+
+    static uint8_t count = 0;       //used to determine what to highlight
+    uint8_t  menuSel = 0;           //return to the main if a menu option has been selected
+
+    //checking direction and increment count logic
+    if(select == 1)
+    {
+        if (count == lines)
+            count = 1;                               //resets count to first option
+        else count++;
+    }
+    if(select == 2)
+    {
+        if (count == 1)
+            count = lines;                          //this is the max number of menu options
+        else count--;
+    }
+    if(select == 3)
+    {
+        //3 indicates a button press and should go to next state depending on option selected
+        //would need to reset count to 0
+        menuSel = count;
+        count = 0;
+        return (menuSel);
+    }
+
+    //start printing sequence
+    if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
+
+    ystart = (79-(lines*17)/2);
+    while(i <s1)
+    {
+        xstart = 63-((s1*11)/2);
+        if(count == 1)
+            ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], selectColor, selectBack, 2);
+        else
+            ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+    i=0;
+    y++;
+    while(i < s2)
+        {
+            xstart = 63-((s2*11)/2);
+            if(count == 2)
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], selectColor, selectBack, 2);
+            else
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+            i++;
+        }
+    return(0);              //if not button pushed return 0 to stay in menu function
 }
 
 /******************************
