@@ -17,6 +17,7 @@
 #include "speed.h"
 #include "ultraSonic.h"
 #include "alarms.h"
+#include "ADC.h"
 
 #define writeIdleScreen     0
 #define writeMainMenu       1
@@ -28,7 +29,7 @@ uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
 uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
-
+volatile float normalizedADCRes;
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
 uint8_t triggerFinished = 0;                     //starts trigger for ultra sonic
@@ -69,6 +70,7 @@ int main(void)
     initTimer32For100us();    //init Timer32 for 100us interrupt rate
     initHallEffectPins();     //init just read the name
     initSpeedometer();        //init just read name
+    ADCBacklightInit();       //init ADC module and Backlight PWM
 
     //First Time ultraSonic
     timerA2_init();           //init Timer A2 for ultrasonic
@@ -207,6 +209,8 @@ int main(void)
             saveToFlash(alarmData, 1 );        //write a temp alarm to flash
             tempAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
         }
+
+        updateBacklight(normalizedADCRes);
 
 
 
@@ -374,5 +378,20 @@ void TA2_N_IRQHandler(void)
         ultraSonicRead2 = MAP_Timer_A_getCaptureCompareCount(TIMER_A2_BASE,TIMER_A_CAPTURECOMPARE_REGISTER_1); // read timer_A value
         if(ultraSonicRead2 < ultraSonicRead1) ultraSonicRead2 =+ 65536;             //change this to check overflow bit and reset it
         triggerFinished = 1;          //Tells main to calculate difference and find distance
+    }
+}
+
+void ADC14_IRQHandler(void)
+{
+    uint64_t status = MAP_ADC14_getEnabledInterruptStatus();
+    uint16_t curADCResult;
+    MAP_ADC14_clearInterruptFlag(status);
+
+    if (ADC_INT0 & status)
+    {
+        curADCResult = MAP_ADC14_getResult(ADC_MEM0);
+        normalizedADCRes = (curADCResult) / 16384.0;
+
+        //MAP_ADC14_toggleConversionTrigger();
     }
 }
