@@ -24,18 +24,21 @@
 #define writeSetTimeSubMenu 2
 #define writeDateSetSubMenu 3
 #define writeErrorLogMenu   4
+#define writeTempAlarm      5
+#define writeSpeedAlarm     6
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
 uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
 volatile float normalizedADCRes;
+
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
 uint8_t triggerFinished = 0;                     //starts trigger for ultra sonic
 
 //Alarm variables
-uint8_t alarmData[35];
+uint8_t alarmData[20];
 
 void clockInit48MHzXTL(void); //Function to set the clk to 48MHz external
 void PORT1_IRQHandler(void);  //for both on board pushbuttons
@@ -60,7 +63,7 @@ int main(void)
     uint8_t timeArray[7]      = {1,2,5,6,0,0,0};       //send to all print functions to print time to screen, should be updated by RTC read atleast once a minute.
     uint8_t writeTimeToRTC[7];                         //for writing time data to RTC.
     float RTCtemp = 22.3;                              //used to take temperature from RTC and send to different functions
-    uint8_t tempAlarmCheck = 0;                        //used so that only one alarm is triggered once
+    uint8_t tempAlarmCheck = 0, speedAlarmCheck=0;                        //used so that only one alarm is triggered once
 
     //inits
     push_btn_init();
@@ -83,9 +86,11 @@ int main(void)
 
 
     readFullRTC(timeArray);            //Gets init time from RTC
-
-    timeArray[6] = 0x18;               //the year does not seem to be staying
-    writeFullRTC(timeArray);           //Just for setting up the RTC properly
+//      FOR HARD SETTING DATE
+//    timeArray[6] = 0x18;               //the year does not seem to be staying
+//    timeArray[5] = 0x11;               //month
+//    timeArray[4] = 0x27;               //date
+//    writeFullRTC(timeArray);           //Just for setting up the RTC properly
 
 
     MAP_Interrupt_enableMaster();           //enable interrupts
@@ -153,12 +158,27 @@ int main(void)
                 userSelection = writeErrorMenu(direction);
 
                 if(userSelection == 1)
-                    nextState = writeIdleScreen;//Write Temp error log
+                    nextState = writeTempAlarm;//Write Temp error log
                 if(userSelection == 2)
-                    nextState = writeIdleScreen;//write Speed error logs
+                    nextState = writeSpeedAlarm;//write Speed error logs
 
                 break;
 
+            case writeTempAlarm:
+                userSelection = writeTempAlarmLog(direction);
+
+                if(userSelection == 1)
+                    nextState = writeIdleScreen;
+
+                break;
+
+            case writeSpeedAlarm:
+                userSelection = writeSpeedAlarmLog(direction);
+
+                if(userSelection == 1)
+                    nextState = writeIdleScreen;
+
+                break;
             default:
                 ;//do nothing
         }
@@ -191,8 +211,8 @@ int main(void)
         {
             bumperDistance =  ((ultraSonicRead2*10)/12) /58;
             //Changes LED
-            if(bumperDistance >= 200) {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);}
-            if(bumperDistance < 200)  {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);}
+            if(bumperDistance >= 200) {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);proximityBannerAlarm(0);}
+            if(bumperDistance < 200)  {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);proximityBannerAlarm(1);}
 
             triggerUltraSonic();    //trig pin for 10us
             triggerFinished = 0;
@@ -209,6 +229,18 @@ int main(void)
             saveToFlash(alarmData, 1 );        //write a temp alarm to flash
             tempAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
         }
+
+
+        if(speed <= 85)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
+            speedAlarmCheck=1;
+        if(speed > 85 && speedAlarmCheck)
+        {
+            //send alarm to save in flash
+            sprintf(alarmData,"%02x/%02x/%02x at %02x:%02x", timeArray[5], timeArray[4], timeArray[6], timeArray[2], timeArray[1]);
+            saveToFlash(alarmData, 2 );        //write a temp alarm to flash
+            speedAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
+        }
+
 
         updateBacklight(normalizedADCRes);
 
@@ -289,6 +321,7 @@ void PORT6_IRQHandler(void)
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P6);  //Saves the interrupt status to status variable
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, status);  //Clears the interrupt flag
 
+    //Rotary Encoder
     if (status & GPIO_PIN0) //If P4.0 caused the interrupt
     {
         if(contact1 == 1){
@@ -335,6 +368,7 @@ void PORT6_IRQHandler(void)
         nextDirection = 3;      //if the btn is pushed
     }
 
+    //Hall Effect
     if (status & GPIO_PIN3)
     {
         hallEffectMagnetCounts++;

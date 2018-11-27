@@ -3186,3 +3186,33 @@ void rotaryPinInit(void)
     MAP_Interrupt_enableInterrupt(INT_PORT6);
     MAP_GPIO_interruptEdgeSelect(GPIO_PORT_P6, GPIO_PIN2+GPIO_PIN0+GPIO_PIN1,GPIO_HIGH_TO_LOW_TRANSITION);
 }
+
+
+
+/******************************
+Name:         proximityBannerAlarm
+Description:  prints banner accross bottom of screen when something is within 200mm of the sensor
+Input:        prox = 1 then print banner if 0 clear banner
+Output:       none
+Source(s):    Some of this code was taken from Dr. Krug's Lecture for EGR 326-01 Fall 2018. And my brain.
+*******************************/
+void proximityBannerAlarm(uint8_t prox)
+{
+
+    uint16_t bannerColor = 0x53FF, textColor = 0xFFFF;
+    uint8_t xstart=0,ystart=0,y=0,i=0;
+    char  bannerText[25] = {" Warning Object Ahead  "};
+
+
+    ystart = 153;
+       while(i < sizeof(bannerText))
+       {
+           xstart = 0;
+           if(prox == 1)
+               ST7735_DrawCharS(xstart+(6*i),ystart+(y*8), bannerText[i], textColor, bannerColor, 1);
+           else
+               ST7735_DrawCharS(xstart+(6*i),ystart+(y*8), bannerText[i], 0x0000, 0x0001, 1);//clears background but it really just prints in black on black
+           i++;
+       }
+
+}

@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define BACKLIGHTOFFSET 0
+#define BACKLIGHTOFFSET 30
 
 /* Timer_A PWM Configuration Parameter */
 Timer_A_PWMConfig pwmConfigBacklight =

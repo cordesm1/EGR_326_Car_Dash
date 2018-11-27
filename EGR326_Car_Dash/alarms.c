@@ -6,6 +6,11 @@
  */
 
 #include "driverlib.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include "ST7735.h"
 
 
 
@@ -47,20 +52,22 @@ void saveToFlash(uint8_t dataSet[20] , uint8_t alarmType)
 
     if(alarmType == 2)//this alarm will be for all speeding occasions
     {
-       //gets rid of the last speeding alarm and shifts them all down one to make room for the new one
-       for (i = messageSize*7; i < alarmLogSize; i++)
-       { // read values in flash before programming
-           read_back_data[i] = *addr_pointer++;
-       }
-       //keeps first set of  5  temp alarms in the same place
+
+        //keeps first set of  5  temp alarms in the same place
        for (i = 0; i<messageSize*5; i++)
        {
            read_back_data[i] = *addr_pointer++;
        }
+        //gets rid of the last speeding alarm and shifts them all down one to make room for the new one
+       for (i = messageSize*6; i < alarmLogSize; i++)
+       { // read values in flash before programming
+           read_back_data[i] = *addr_pointer++;
+       }
+
        //places the new speed alarm in the first spot of speed alarms
-       for (i = messageSize*6 ; i < messageSize*7; i++)
+       for (i = messageSize*5 ; i < messageSize*6; i++)
        {
-           read_back_data[i] = dataSet[i];
+           read_back_data[i] = dataSet[i-(messageSize*5)];
        }
     }
 
@@ -82,6 +89,178 @@ void saveToFlash(uint8_t dataSet[20] , uint8_t alarmType)
            read_back_data[i] = *addr_pointer++;
        }
 }
+
+
+/******************************
+Name:         writeTempAlarmLog
+Description:  prints last 5 temp alarms
+Input:        select = rotoray encoder selections
+Output:       none
+Source(s):    none
+*******************************/
+uint8_t writeTempAlarmLog(uint8_t select)
+{
+
+    char menuItem [2][10] = {"Temp Alarm","Log"};
+    uint8_t tempAlarms[100];                            //each alarm is 20 long *5 = 100 size
+    uint8_t i=0, xstart=0, ystart=10, y=0;
+    uint8_t s1=20;                        //represents the size of the menu option to keep them centered
+    uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
+    uint16_t textColor  = ST7735_Color565(25, 255, 255);                //text color
+    uint16_t selectColor= ST7735_Color565(0, 0, 0);
+    uint16_t selectBack = ST7735_Color565(25, 255, 255);
+
+    uint8_t* addr_pointer; // pointer to address in flash for reading back values
+
+    static uint8_t count = 0;       //used to determine what to highlight
+
+
+    if(select == 3)
+    {
+        //3 indicates a button press and should go to next state depending on option selected
+        //would need to reset count to 0
+        count = 0;
+        return (1);
+    }
+
+
+    addr_pointer = CALIBRATION_START + 4; // point to address in flash for saved data
+    for (i = 0; i < 100; i++)
+    { // read values in flash after programming
+        tempAlarms[i] = *addr_pointer++;
+    }
+    i=0;
+
+
+    //start printing sequence
+    if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
+
+
+    //print header
+    ystart = 30;
+    xstart = 10;
+    while(i < 10)
+    {
+            ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+    //prints second line of header
+    i=0;
+    y++;
+    xstart = 63-((3*11)/2);
+    while(i < 3)
+    {
+        ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+
+
+    //start printing alarm list
+    i=0;
+    ystart = 75;
+    xstart = 13; //63-((s1*6)/1);
+    for(y=0; y<5; y++)
+    {
+        i=0;
+        while(i <s1)
+        {
+            ST7735_DrawCharS(xstart+(6*i),ystart+(y*12), tempAlarms[i+(s1*y)], textColor, backGround, 1);
+            i++;
+        }
+    }
+
+
+    return(0);              //if not button pushed return 0 to stay in menu function
+}
+
+
+
+
+/******************************
+Name:         writeSpeedAlarmLog
+Description:  prints last 5 temp alarms
+Input:        select = rotoray encoder selections
+Output:       none
+Source(s):    none
+*******************************/
+uint8_t writeSpeedAlarmLog(uint8_t select)
+{
+
+    char menuItem [2][11] = {"Speed Alarm","Log"};
+    uint8_t speedAlarms[100];                            //each alarm is 20 long *5 = 100 size
+    uint8_t i=0, xstart=0, ystart=10, y=0;
+    uint8_t s1=20;                        //represents the size of the menu option to keep them centered
+    uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
+    uint16_t textColor  = ST7735_Color565(25, 255, 255);                //text color
+    uint16_t selectColor= ST7735_Color565(0, 0, 0);
+    uint16_t selectBack = ST7735_Color565(25, 255, 255);
+
+    uint8_t* addr_pointer; // pointer to address in flash for reading back values
+
+    static uint8_t count = 0;       //used to determine what to highlight
+
+
+    if(select == 3)
+    {
+        //3 indicates a button press and should go to next state depending on option selected
+        //would need to reset count to 0
+        count = 0;
+        return (1);
+    }
+
+
+    addr_pointer = CALIBRATION_START + 4 + 100; // point to address in flash for speed saved data
+    for (i = 0; i < 100; i++)
+    { // read values in flash after programming
+        speedAlarms[i] = *addr_pointer++;
+    }
+    i=0;
+
+
+    //start printing sequence
+    if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
+
+
+    //print header
+    ystart = 30;
+    xstart = 3;
+    while(i < 11)
+    {
+            ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+    //prints second line of header
+    i=0;
+    y++;
+    xstart = 63-((3*11)/2);
+    while(i < 3)
+    {
+        ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+
+
+    //start printing alarm list
+    i=0;
+    ystart = 75;
+    xstart = 13; //63-((s1*6)/1);
+    for(y=0; y<5; y++)
+    {
+        i=0;
+        while(i <s1)
+        {
+            ST7735_DrawCharS(xstart+(6*i),ystart+(y*12), speedAlarms[i+(s1*y)], textColor, backGround, 1);
+            i++;
+        }
+    }
+
+
+    return(0);              //if not button pushed return 0 to stay in menu function
+}
+
+
+
+
 
 
 //
