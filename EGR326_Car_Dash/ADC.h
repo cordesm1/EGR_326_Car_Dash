@@ -9,7 +9,7 @@
 #define ADC_H_
 
 void ADCBacklightInit(void);
-void updateBacklight(float normalizedADCRes);
+void updateBacklight(float normalizedADCRes, float normalizedADCResBat);
 
 
 

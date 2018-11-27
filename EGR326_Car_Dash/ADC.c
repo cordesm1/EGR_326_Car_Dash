@@ -22,9 +22,10 @@ Timer_A_PWMConfig pwmConfigBacklight =
         3200
 };
 
-void updateBacklight(float normalizedADCRes)
+void updateBacklight(float normalizedADCRes, float normalizedADCResBat)
 {
     static float last = 0;
+    int temp = 0;
 
     if(!ADC14_isBusy ())
             MAP_ADC14_toggleConversionTrigger();
@@ -35,6 +36,8 @@ void updateBacklight(float normalizedADCRes)
                     pwmConfigBacklight.dutyCycle = (last*pwmConfigBacklight.timerPeriod + BACKLIGHTOFFSET);
                     MAP_Timer_A_generatePWM(TIMER_A1_BASE, &pwmConfigBacklight);
                 }
+        temp = 17.7778*normalizedADCResBat;
+        driveBatMotor(temp);
 }
 void ADCBacklightInit(void)
 {
@@ -44,22 +47,22 @@ void ADCBacklightInit(void)
 
     /* ADC Init */
     MAP_ADC14_enableModule();
-    MAP_ADC14_initModule(ADC_CLOCKSOURCE_MCLK, ADC_PREDIVIDER_1, ADC_DIVIDER_4,
+    MAP_ADC14_initModule(ADC_CLOCKSOURCE_SMCLK, ADC_PREDIVIDER_4, ADC_DIVIDER_4,
                          0);
 
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(
-            GPIO_PORT_P5, GPIO_PIN5, GPIO_TERTIARY_MODULE_FUNCTION);
+            GPIO_PORT_P5, GPIO_PIN5|GPIO_PIN4, GPIO_TERTIARY_MODULE_FUNCTION);
 
-    MAP_ADC14_configureSingleSampleMode(ADC_MEM0, true);
-    MAP_ADC14_configureConversionMemory(ADC_MEM0, ADC_VREFPOS_AVCC_VREFNEG_VSS,
-                                        ADC_INPUT_A0, false);
+    MAP_ADC14_configureMultiSequenceMode(ADC_MEM0, ADC_MEM1, false);
+        MAP_ADC14_configureConversionMemory(ADC_MEM0, ADC_VREFPOS_AVCC_VREFNEG_VSS,ADC_INPUT_A0, false);
+        MAP_ADC14_configureConversionMemory(ADC_MEM1, ADC_VREFPOS_AVCC_VREFNEG_VSS,ADC_INPUT_A1, false);
 
-    MAP_ADC14_enableSampleTimer(ADC_MANUAL_ITERATION);
+    MAP_ADC14_enableSampleTimer(ADC_AUTOMATIC_ITERATION);
 
     MAP_ADC14_enableConversion();
     MAP_ADC14_toggleConversionTrigger();
 
-    MAP_ADC14_enableInterrupt(ADC_INT0);
+    MAP_ADC14_enableInterrupt(ADC_INT1);
     MAP_Interrupt_enableInterrupt(INT_ADC14);
 
 }

@@ -180,3 +180,65 @@ void driveMotor(int newSpeed)
         }
     }
 }
+
+void initBatteryometer(void)
+{
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN3+GPIO_PIN5+GPIO_PIN6+GPIO_PIN7);    //Sets up output pins for the motor
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN3+GPIO_PIN5+GPIO_PIN6+GPIO_PIN7); //Sets all pins to low to start
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN3+GPIO_PIN6);    //Turns on one pin for each coil of the motor
+    driveBatMotor(160);
+    driveBatMotor(0);
+}
+
+void driveBatMotor(int newSpeed)
+{
+
+    static int oldSpeed = 0;
+
+    int cycles = newSpeed-oldSpeed;
+
+    oldSpeed = newSpeed;
+
+
+    if(cycles > 0)
+    {
+
+        while(cycles > 0)
+            {
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN3);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN5);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN7);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN5);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN3);
+            _delay_cycles(24000);
+            MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN7);
+            MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6);
+            _delay_cycles(24000);
+            cycles--;
+            }
+    }
+
+    if(cycles < 0)
+    {
+        cycles = cycles *(-1);
+    while(cycles > 0)
+        {
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN6);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN7);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN3);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN5);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN7);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN6);
+    _delay_cycles(24000);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN3);
+    _delay_cycles(24000);
+    cycles--;
+        }
+    }
+}

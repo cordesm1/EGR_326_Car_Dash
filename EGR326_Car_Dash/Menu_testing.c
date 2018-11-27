@@ -31,7 +31,8 @@ uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
 uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
-volatile float normalizedADCRes;
+volatile float normalizedADCRes, normalizedADCResBat;
+static uint16_t resultsBuffer[2];
 
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
@@ -73,6 +74,7 @@ int main(void)
     initTimer32For100us();    //init Timer32 for 100us interrupt rate
     initHallEffectPins();     //init just read the name
     initSpeedometer();        //init just read name
+    initBatteryometer();
     ADCBacklightInit();       //init ADC module and Backlight PWM
 
     //First Time ultraSonic
@@ -242,7 +244,7 @@ int main(void)
         }
 
 
-        updateBacklight(normalizedADCRes);
+        updateBacklight(normalizedADCRes, normalizedADCResBat);
 
 
 
@@ -418,14 +420,15 @@ void TA2_N_IRQHandler(void)
 void ADC14_IRQHandler(void)
 {
     uint64_t status = MAP_ADC14_getEnabledInterruptStatus();
-    uint16_t curADCResult;
+
+
     MAP_ADC14_clearInterruptFlag(status);
 
-    if (ADC_INT0 & status)
-    {
-        curADCResult = MAP_ADC14_getResult(ADC_MEM0);
-        normalizedADCRes = (curADCResult) / 16384.0;
+    if(status & ADC_INT1)
+        {
+            MAP_ADC14_getMultiSequenceResult(resultsBuffer);
+        }
+        normalizedADCRes = (resultsBuffer[0]) / 16384.0;
+        normalizedADCResBat = ((resultsBuffer[1]) / 16384.0)*(3.3*1.065*4.108);
 
-        //MAP_ADC14_toggleConversionTrigger();
-    }
 }

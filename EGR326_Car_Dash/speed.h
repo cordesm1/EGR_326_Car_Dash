@@ -14,7 +14,8 @@ void initHallEffectPins(void);
 void changeMotorPWMspeed(uint8_t motorSpeed);
 void initSpeedometer(void);
 void driveMotor(int newSpeed);
-
+void initBatteryometer(void);
+void driveBatMotor(int newSpeed);
 
 
 #endif /* SPEED_H_ */
