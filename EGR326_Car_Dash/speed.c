@@ -43,10 +43,12 @@ void initTimer32For100us(void)
     MAP_Interrupt_enableInterrupt(INT_T32_INT1);
     MAP_Interrupt_enableMaster();
 
-    MAP_Timer32_setCount(TIMER32_BASE,48000000);
+    MAP_Timer32_setCount(TIMER32_BASE,4800000);
     MAP_Timer32_enableInterrupt(TIMER32_BASE);
     MAP_Timer32_startTimer(TIMER32_BASE, true);
 }
+
+
 
 void initHallEffectPins(void)
 {

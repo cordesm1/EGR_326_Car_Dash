@@ -76,6 +76,8 @@ int main(void)
     initSpeedometer();        //init just read name
     initBatteryometer();
     ADCBacklightInit();       //init ADC module and Backlight PWM
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P7, GPIO_PIN6);
+    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P7, GPIO_PIN6);
 
     //First Time ultraSonic
     timerA2_init();           //init Timer A2 for ultrasonic
@@ -380,14 +382,22 @@ void PORT6_IRQHandler(void)
 
 void T32_INT1_IRQHandler(void)
 {
-    //100us Timer interrupt
+    static int blinkerCount = 5;
+    //100ms Timer interrupt
     MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
     speed = hallEffectMagnetCounts;
     hallEffectMagnetCounts = 0;
     MAP_Timer32_setCount(TIMER32_BASE,4800000);
     MAP_Timer32_startTimer(TIMER32_BASE, true);
 
+    if(!blinkerCount)
+        {
+        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P7, GPIO_PIN6);
+        blinkerCount = 6;
+        }
+    blinkerCount--;
 }
+
 
 
 //Interrupts
