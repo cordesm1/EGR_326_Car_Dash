@@ -29,10 +29,11 @@
 
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
-uint8_t contact1 = 0, contact2 = 0, direction = 0;  //Rotary encoder vars
+uint8_t contact1 = 0, contact2 = 0, direction = 0;              //Rotary encoder vars
 uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
 volatile float normalizedADCRes, normalizedADCResBat;
 static uint16_t resultsBuffer[2];
+uint16_t noInputCounter = 0;                 //variabls used for detecting idle
 
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
@@ -65,6 +66,8 @@ int main(void)
     uint8_t writeTimeToRTC[7];                         //for writing time data to RTC.
     float RTCtemp = 22.3;                              //used to take temperature from RTC and send to different functions
     uint8_t tempAlarmCheck = 0, speedAlarmCheck=0;                        //used so that only one alarm is triggered once
+
+    uint8_t noInputReset = 0 , noInputState = 0;                          //used to reset LCD when user goes Idle
 
     //inits
     push_btn_init();
@@ -117,7 +120,7 @@ int main(void)
 
             break;
             case writeMainMenu:
-                userSelection = writeMenu(direction);
+                userSelection = writeMenu(direction , noInputReset);
 
                 if(userSelection == 0)
                     nextState = writeMainMenu;
@@ -136,7 +139,7 @@ int main(void)
 
 
             case writeSetTimeSubMenu:
-                userSelection = setTimeSubMenu(direction, writeTimeToRTC, timeArray);
+                userSelection = setTimeSubMenu(direction, writeTimeToRTC, timeArray, noInputReset);
 
                 if (userSelection)
                 {
@@ -189,6 +192,26 @@ int main(void)
 
         //Stuff that needs to happen as often as possible without being super timing critical
         //aka:watchdog?
+
+        //Setting flags for when user goes idle
+        noInputReset = 0;
+        if(nextState == noInputState)
+        {
+            noInputReset = 1;
+            noInputState = 99;
+        }
+        if(direction != 0)
+            noInputCounter=0;
+        if(noInputCounter > 100)
+        {
+            noInputCounter = 0;     //restart counter
+            //noInputReset = 1;       //flag for reseting LCD screens
+            noInputState = nextState;//keep track of state that it happened in
+            nextState = writeIdleScreen;
+        }
+
+
+
         //encoder direction setting
         direction = nextDirection;
         nextDirection = 0;
@@ -382,8 +405,10 @@ void PORT6_IRQHandler(void)
 
 void T32_INT1_IRQHandler(void)
 {
+    //This acts as a 100ms Timer interrupt
     static int blinkerCount = 5;
-    //100ms Timer interrupt
+
+
     MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
     speed = hallEffectMagnetCounts;
     hallEffectMagnetCounts = 0;
@@ -396,6 +421,11 @@ void T32_INT1_IRQHandler(void)
         blinkerCount = 6;
         }
     blinkerCount--;
+
+    //used to kick users out of an entry screen to return them to idle
+    //after 1minute
+    noInputCounter++;
+
 }
 
 

@@ -1331,7 +1331,7 @@ Input:        none
 Output:       none
 Source(s):    none
 *******************************/
-uint8_t writeMenu(uint8_t select)
+uint8_t writeMenu(uint8_t select , uint8_t reset)
 {
 
     char menuItem [4][10] = {"Set Time","Set Date","Error Log","Extra"};
@@ -1345,6 +1345,10 @@ uint8_t writeMenu(uint8_t select)
     static uint8_t count = 0;       //used to determine what to highlight
     uint8_t  menuSel = 0;           //return to the main if a menu option has been selected
 
+    if (reset == 1)
+    {
+        count = 0;
+    }
     //checking direction and increment count logic
     if(select == 1)
     {
@@ -1424,7 +1428,7 @@ Input:        select = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime, uint8_t *oldTime)
+uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime, uint8_t *oldTime, uint8_t reset)
 {
     char menuItem [8][10] = {"Set Time", "x", "x ", "x"};                               //x's can be filled with other lines but add back s# with size
 
@@ -1439,6 +1443,13 @@ uint8_t setTimeSubMenu(uint8_t select , uint8_t *newTime, uint8_t *oldTime)
        uint16_t selectBack = ST7735_Color565(25, 255, 255);
 
        static uint8_t count = 0, timeInput = 0, firstTimeBackground = 0;                                        //counts inputs
+
+       if(reset)
+       {
+           count = 0;
+           timeInput = 0;
+           firstTimeBackground = 0;
+       }
 
        if(firstTimeBackground == 0)
        {

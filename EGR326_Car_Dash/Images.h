@@ -11,9 +11,9 @@
 
 //Menu prints
 uint8_t idleScreen(uint8_t select, float temp, uint8_t speed,uint8_t *timeArray);
-uint8_t writeMenu(uint8_t select);
+uint8_t writeMenu(uint8_t select, uint8_t reset);
 uint8_t writeErrorMenu(uint8_t select);
-uint8_t setTimeSubMenu(uint8_t select, uint8_t *newTime, uint8_t *oldTime);
+uint8_t setTimeSubMenu(uint8_t select, uint8_t *newTime, uint8_t *oldTime, uint8_t reset);
 uint8_t setDateSubMenu(uint8_t select , uint8_t *newDate);
 void topBannerPrint(float temp, uint8_t speed, uint8_t *timeArray);
 void systick_delay_ms(uint32_t delay_time); //Function to wait "delay_time" ms
