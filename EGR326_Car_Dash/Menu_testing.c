@@ -27,6 +27,16 @@
 #define writeTempAlarm      5
 #define writeSpeedAlarm     6
 
+Timer_A_PWMConfig pwmConfigSounder =
+{
+        TIMER_A_CLOCKSOURCE_SMCLK,
+        TIMER_A_CLOCKSOURCE_DIVIDER_1,
+        5769,
+        TIMER_A_CAPTURECOMPARE_REGISTER_1,
+        TIMER_A_OUTPUTMODE_RESET_SET,
+        0
+};
+
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;              //Rotary encoder vars
@@ -34,6 +44,7 @@ uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for c
 volatile float normalizedADCRes, normalizedADCResBat;
 static uint16_t resultsBuffer[2];
 uint16_t noInputCounter = 0;                 //variabls used for detecting idle
+uint8_t noiseEnable = 0;
 
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
@@ -81,6 +92,8 @@ int main(void)
     ADCBacklightInit();       //init ADC module and Backlight PWM
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P7, GPIO_PIN6);
     MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P7, GPIO_PIN6);
+    MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P10, GPIO_PIN5, GPIO_PRIMARY_MODULE_FUNCTION); //Sounder Init
+    MAP_Timer_A_generatePWM(TIMER_A3_BASE, &pwmConfigSounder);
 
     //First Time ultraSonic
     timerA2_init();           //init Timer A2 for ultrasonic
@@ -407,6 +420,8 @@ void T32_INT1_IRQHandler(void)
 {
     //This acts as a 100ms Timer interrupt
     static int blinkerCount = 5;
+    static uint8_t on = 0;
+    static uint8_t beepz = 0;
 
 
     MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
@@ -425,6 +440,39 @@ void T32_INT1_IRQHandler(void)
     //used to kick users out of an entry screen to return them to idle
     //after 1minute
     noInputCounter++;
+    if(noiseEnable == 0)
+            {
+            TIMER_A3->CCR[1] = 0;
+            beepz = 0;
+            on = 0;
+            }
+        if(noiseEnable == 1)
+        {
+            TIMER_A3->CCR[0] = 5769;
+            if(on) TIMER_A3 -> CCR[1] = 0;
+            if(!on) TIMER_A3 -> CCR[1] = 2885;
+            if(beepz < 7)
+                {
+                on = !on;
+                }
+            beepz++;
+            if(beepz == 14)
+                {
+                beepz = 0;
+                on = 0;
+                }
+
+        }
+
+        if (noiseEnable == 2)
+        {
+            TIMER_A3->CCR[0] = 3841;
+            if (on)
+                TIMER_A3->CCR[1] = 0;
+            if (!on)
+                TIMER_A3->CCR[1] = 1916;
+            on = !on;
+        }
 
 }
 
