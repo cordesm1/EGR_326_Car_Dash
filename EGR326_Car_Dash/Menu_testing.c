@@ -246,10 +246,10 @@ int main(void)
         }
 
 
-
-        if(RTCtemp <= 43)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
+        //changed alarm threshold to 24 for testing purposes
+        if(RTCtemp <= 24)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
             tempAlarmCheck=1;
-        if(RTCtemp > 43 && tempAlarmCheck)
+        if(RTCtemp > 24 && tempAlarmCheck)
         {
             //send alarm to save in flash
             sprintf(alarmData,"%02x/%02x/%02x at %02x:%02x", timeArray[5],timeArray[4],timeArray[6],  timeArray[2],timeArray[1]);

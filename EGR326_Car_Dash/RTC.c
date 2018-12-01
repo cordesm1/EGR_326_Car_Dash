@@ -106,6 +106,9 @@ void writeI2C(void)
  *******************************/
 void readTimeIn(uint8_t *timeArray)
 {
+
+    MAP_Interrupt_disableMaster();           //stops interrupts
+
     // Set Master in transmit mode
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
     // Wait for bus release, ready to write
@@ -121,10 +124,14 @@ void readTimeIn(uint8_t *timeArray)
     // read from RTC registers (pointer auto increments after each read)
     timeArray[1] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE);//minutes
     timeArray[2] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE);//hours
+
+    MAP_Interrupt_enableMaster();           //enables interrupts
 }
 
 float readRTCtemp(float RTCtemp)
 {
+    MAP_Interrupt_disableMaster();           //stops interrupts
+
     // Set Master in transmit mode
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
     // Wait for bus release, ready to write
@@ -141,6 +148,7 @@ float readRTCtemp(float RTCtemp)
     RTCtemp = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE);
     RTCtemp = RTCtemp + ((MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE) >> 6)*0.25);
 
+    MAP_Interrupt_enableMaster();           //enables interrupts
     return(RTCtemp);
 }
 
@@ -172,6 +180,8 @@ void readFullRTC(uint8_t *timeArray)
 {
     int i = 0;
 
+    MAP_Interrupt_disableMaster();           //stops interrupts
+
     // Set Master in transmit mode
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);
     // Wait for bus release, ready to write
@@ -187,11 +197,15 @@ void readFullRTC(uint8_t *timeArray)
     // read from RTC registers (pointer auto increments after each read)
     for(i = 0; i<6; i++)
         timeArray[i] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE); //writes seconds to year in the RTC
+
+    MAP_Interrupt_enableMaster();           //enable interrupts
 }
 
 
 void writeFullRTC(uint8_t *timeArray)
 {
+    MAP_Interrupt_disableMaster();           //stops interrupts
+
     uint8_t garbageRead[7];
     //just set random values while testing the write
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);  //Set Master in transmit mode
@@ -216,6 +230,7 @@ void writeFullRTC(uint8_t *timeArray)
 
     readFullRTC(garbageRead);
 
+    MAP_Interrupt_enableMaster();           //enable interrupts
 }
 
 
@@ -225,6 +240,7 @@ void writeTimeOnly(uint8_t *timeArray)
     mins = timeArray[1];
     hours = timeArray[2];
 
+    MAP_Interrupt_disableMaster();           //stops interrupts
 
     MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);  //Set Master in transmit mode
 
@@ -235,4 +251,6 @@ void writeTimeOnly(uint8_t *timeArray)
     MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE, mins);   // write to minutes register
 
     MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, hours); // write to year register and send stop
+
+    MAP_Interrupt_enableMaster();           //enable interrupts
 }
