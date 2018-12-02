@@ -195,7 +195,7 @@ void readFullRTC(uint8_t *timeArray)
     // Wait for bus release, ready to receive
     while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));
     // read from RTC registers (pointer auto increments after each read)
-    for(i = 0; i<6; i++)
+    for(i = 0; i<7; i++)
         timeArray[i] = MAP_I2C_masterReceiveSingleByte(EUSCI_B2_BASE); //writes seconds to year in the RTC
 
     MAP_Interrupt_enableMaster();           //enable interrupts
@@ -254,3 +254,30 @@ void writeTimeOnly(uint8_t *timeArray)
 
     MAP_Interrupt_enableMaster();           //enable interrupts
 }
+
+
+
+void writeDateOnly(uint8_t *timeArray)
+{
+
+    MAP_Interrupt_disableMaster();           //stops interrupts
+    uint8_t date,month,year;
+    date = timeArray[4];
+    month = timeArray[5];
+    year = timeArray[6];
+
+    MAP_I2C_setMode(EUSCI_B2_BASE, EUSCI_B_I2C_TRANSMIT_MODE);  //Set Master in transmit mode
+
+    while (MAP_I2C_isBusBusy(EUSCI_B2_BASE));   // Wait for bus release, ready to write
+
+    MAP_I2C_masterSendMultiByteStart(EUSCI_B2_BASE,4); // set pointer to beginning of RTC registers
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE, date);   // date
+
+    MAP_I2C_masterSendMultiByteNext(EUSCI_B2_BASE, month);   // month
+
+    MAP_I2C_masterSendMultiByteFinish(EUSCI_B2_BASE, year);        // year
+
+    MAP_Interrupt_enableMaster();           //enable interrupts
+}
+

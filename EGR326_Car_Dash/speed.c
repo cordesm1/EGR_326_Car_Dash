@@ -63,19 +63,21 @@ void initHallEffectPins(void)
 
 void changeMotorPWMspeed(uint8_t motorSpeed)
 {
+    if(motorSpeed>3)
+        motorSpeed=0;//safety check to ensure not over 3
     if(motorSpeed == 0) //set Duty Cycle to 0 for stop
     {
         TIMER_A0-> CCR[1] = 0;
     }
-    if(motorSpeed == 0) //set Duty Cycle to 50 for low speed
+    if(motorSpeed == 1) //set Duty Cycle to 50 for low speed
     {
         TIMER_A0-> CCR[1] = 9375;
     }
-    if(motorSpeed == 0) //set Duty Cycle to 75 for mid speed
+    if(motorSpeed == 2) //set Duty Cycle to 75 for mid speed
     {
         TIMER_A0-> CCR[1] = 14062;
     }
-    if(motorSpeed == 0) //set Duty Cycle to 100 for top speed
+    if(motorSpeed == 3) //set Duty Cycle to 100 for top speed
     {
         TIMER_A0-> CCR[1] = 18750;
     }

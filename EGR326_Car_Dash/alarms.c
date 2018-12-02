@@ -98,7 +98,7 @@ Input:        select = rotoray encoder selections
 Output:       none
 Source(s):    none
 *******************************/
-uint8_t writeTempAlarmLog(uint8_t select)
+uint8_t writeTempAlarmLog(uint8_t select, uint8_t reset)
 {
 
     char menuItem [2][10] = {"Temp Alarm","Log"};
@@ -133,6 +133,8 @@ uint8_t writeTempAlarmLog(uint8_t select)
 
 
     //start printing sequence
+    if(reset == 1)
+        count=0;
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
 
 
@@ -183,7 +185,7 @@ Input:        select = rotoray encoder selections
 Output:       none
 Source(s):    none
 *******************************/
-uint8_t writeSpeedAlarmLog(uint8_t select)
+uint8_t writeSpeedAlarmLog(uint8_t select, uint8_t reset)
 {
 
     char menuItem [2][11] = {"Speed Alarm","Log"};
@@ -218,6 +220,8 @@ uint8_t writeSpeedAlarmLog(uint8_t select)
 
 
     //start printing sequence
+    if(reset == 1)
+        count=0;
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
 
 

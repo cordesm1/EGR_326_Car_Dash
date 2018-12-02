@@ -1345,10 +1345,7 @@ uint8_t writeMenu(uint8_t select , uint8_t reset)
     static uint8_t count = 0;       //used to determine what to highlight
     uint8_t  menuSel = 0;           //return to the main if a menu option has been selected
 
-    if (reset == 1)
-    {
-        count = 0;
-    }
+
     //checking direction and increment count logic
     if(select == 1)
     {
@@ -1372,6 +1369,8 @@ uint8_t writeMenu(uint8_t select , uint8_t reset)
     }
 
     //start printing sequence
+    if (reset == 1)
+        count = 0;
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
 
     ystart = (79-(lines*17)/2);
@@ -1662,9 +1661,186 @@ Input:        select  = determines direction of inputs
 Output:       none
 Source(s):
 *******************************/
-uint8_t setDateSubMenu(uint8_t select , uint8_t *newDate)
+uint8_t setDateSubMenu(uint8_t select , uint8_t *newDate, uint8_t *oldDate, uint8_t reset)
 {
-    return (1);//sends back to idle for now
+    char menuItem [1][10] = {"Set Date"};
+    uint8_t printDate[8];
+    uint8_t s1=8, timeValues = 8;
+
+    uint8_t i=0, xstart=0, ystart=10, y=0;
+    uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
+    uint16_t textColor  = ST7735_Color565(25, 255, 255);                     //text color
+    uint16_t selectColor= ST7735_Color565(0, 0, 0);
+    uint16_t selectBack = ST7735_Color565(25, 255, 255);
+
+    static uint8_t dateArray[3]; //holds bcd values for day/month/year
+    static uint8_t count=0, timeInput=0, firstTimeBackground = 0;
+
+    if(reset)
+    {
+      count = 0;
+      timeInput = 0;
+      firstTimeBackground = 0;
+    }
+
+    if(firstTimeBackground == 0)
+    {
+      // set TimeArray = to read in time from RTC or always start at zeros
+      dateArray[1] = ((oldDate[4]>>4) *10 + (oldDate[4]&0x0F));//day
+      dateArray[0] = ((oldDate[5]>>4) *10 + (oldDate[5]&0x0F));//month
+      dateArray[2] = ((oldDate[6]>>4) *10 + (oldDate[6]&0x0F));//year;
+
+      sprintf(printDate,"%02d/%02d/%02d",dateArray[0],dateArray[1],dateArray[2]);
+      count = dateArray[0];
+      ST7735_FillScreen(ST7735_Color565(0, 0, 0));                    //Background for whole screen only the first time
+      firstTimeBackground++;
+    }
+
+    if(timeInput == 0)
+    {
+        if(select == 1)
+        {
+           if (count > 11)
+               count = 1;                               //resets count to first option
+           else count++;
+        }
+        if(select == 2)
+        {
+           if (count == 1)
+               count = 12;                          //this is the max number of menu options
+           else count--;
+        }
+    }
+    if(timeInput == 1)
+        {
+            if(select == 1)
+            {
+               if (count > 30)
+                   count = 1;                               //resets count to first option
+               else count++;
+            }
+            if(select == 2)
+            {
+               if (count == 1)
+                   count = 31;                          //this is the max number of menu options
+               else count--;
+            }
+        }
+    if(timeInput == 2)
+        {
+            if(select == 1)
+            {
+               if (count > 24)
+                   count = 1;                               //resets count to first option
+               else count++;
+            }
+            if(select == 2)
+            {
+               if (count == 1)
+                   count = 25;                          //this is the max number of menu options
+               else count--;
+            }
+        }
+
+
+
+
+    if(select==3)
+    {
+        timeInput++;
+            count = dateArray[timeInput];
+
+//        if(timeInput == 1)
+//           timeInput = timeInput+2;
+//        else timeInput ++;
+//
+//        //sets current time to counters
+//        if(timeInput==3 || timeInput == 4)
+//            count = currentTime[timeInput-1];
+//        else
+//            count = currentTime[timeInput];
+//
+        if(timeInput > 2)
+        {
+            timeInput = 0;
+            firstTimeBackground = 0;
+//           timeInput=0;
+//           firstTimeBackground = 0;
+//           for(i=0; i<5; i++)
+//               timeArray[i] = timeArray[i] - 48;
+//           newTime[1] = ((timeArray[3]<<4)|timeArray[4]);                //minutes in BCD
+//           newTime[2] = ((timeArray[0]<<4)|timeArray[1]);                //hours in BCD
+            //remember the right order to write to RTC
+            newDate[4] = ((dateArray[1]/10)<<4) | dateArray[1]-((dateArray[1]/10)*10);                //Day
+            newDate[5] = ((dateArray[0]/10)<<4) | dateArray[0]-((dateArray[0]/10)*10);                //Month
+            newDate[6] = ((dateArray[2]/10)<<4) | dateArray[2]-((dateArray[2]/10)*10);                //Year
+
+            return(1);//sends back to idle
+        }
+
+
+    }
+
+
+    //prints "Set Date"
+    ystart = 35;
+    while(i < s1)
+    {
+        xstart = 63-((s1*11)/2);
+            ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), menuItem[y][i], textColor, backGround, 2);
+        i++;
+    }
+
+    //set DateArray = count
+    dateArray[timeInput] = count;
+
+    //set print array
+    sprintf(printDate,"%02d/%02d/%02d",dateArray[0],dateArray[1],dateArray[2]);
+
+    ystart = 80;
+    i=0;
+    y++;
+
+    //Prints Time to screen as user changes it
+    //  xx/xx/xx = 8 spaces needed
+    while(i < timeValues)
+        {
+            xstart = 63-((timeValues*11)/2);
+            if(timeInput == 0 && i == 0)
+            {
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                i++;
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                //maybe change to an underline because the highlight doesnt look good
+
+
+            }
+            else if(timeInput == 1 && i == 3)
+            {
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                i++;
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                //maybe change to an underline because the highlight doesnt look good
+
+            }
+            else if(timeInput == 2 && i == 6)
+            {
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                i++;
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i],backGround,textColor, 2);
+                //maybe change to an underline because the highlight doesnt look good
+
+            }
+            else
+            {
+                ST7735_DrawCharS(xstart+(11*i),ystart+(y*17), printDate[i], textColor, backGround, 2);
+            }
+            i++;
+        }
+    i=0;
+    y++;
+
+    return (0);//sends back to idle for now
 }
 
 /******************************
@@ -1814,7 +1990,7 @@ Input:        select = rotoray encoder selections
 Output:       none
 Source(s):    none
 *******************************/
-uint8_t writeErrorMenu(uint8_t select)
+uint8_t writeErrorMenu(uint8_t select, uint8_t reset)
 {
 
     char menuItem [2][10] = {"Temp Log","Speed Log"};
@@ -1827,6 +2003,7 @@ uint8_t writeErrorMenu(uint8_t select)
 
     static uint8_t count = 0;       //used to determine what to highlight
     uint8_t  menuSel = 0;           //return to the main if a menu option has been selected
+
 
     //checking direction and increment count logic
     if(select == 1)
@@ -1851,6 +2028,8 @@ uint8_t writeErrorMenu(uint8_t select)
     }
 
     //start printing sequence
+    if(reset == 1)
+            count =0;
     if(count == 0){ ST7735_FillScreen(ST7735_Color565(0, 0, 0));  count++;}                       //Background for whole screen only the first time
 
     ystart = (79-(lines*17)/2);
@@ -3227,3 +3406,34 @@ void proximityBannerAlarm(uint8_t prox)
        }
 
 }
+
+
+
+/******************************
+Name:         tempBannerAlarm
+Description:  prints banner accross bottom of screen when something is within 200mm of the sensor
+Input:        temp = 1 then print banner if 0 clear banner
+Output:       none
+Source(s):    Some of this code was taken from Dr. Krug's Lecture for EGR 326-01 Fall 2018. And my brain.
+*******************************/
+void tempBannerAlarm(uint8_t temp)
+{
+
+    uint16_t bannerColor = 0x5687, textColor = 0xFFFF;
+    uint8_t xstart=0,ystart=0,y=0,i=0;
+    char  bannerText[25] = {"To Hot:Impending Doom "};
+
+
+    ystart = 145;
+       while(i < sizeof(bannerText))
+       {
+           xstart = 0;
+           if(temp == 1)
+               ST7735_DrawCharS(xstart+(6*i),ystart+(y*8), bannerText[i], textColor, bannerColor, 1);
+           else
+               ST7735_DrawCharS(xstart+(6*i),ystart+(y*8), bannerText[i], 0x0000, 0x0001, 1);//clears background but it really just prints in black on black
+           i++;
+       }
+
+}
+

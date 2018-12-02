@@ -40,11 +40,12 @@ Timer_A_PWMConfig pwmConfigSounder =
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;              //Rotary encoder vars
-uint8_t hallEffectMagnetCounts = 0 , speed = 0;                 //variable for counting how many times the magnet passes the hall effect
+uint8_t hallEffectMagnetCounts = 0 , speed = 0, setSpeed=0;                 //variable for counting how many times the magnet passes the hall effect
 volatile float normalizedADCRes, normalizedADCResBat;
 static uint16_t resultsBuffer[2];
 uint16_t noInputCounter = 0;                 //variabls used for detecting idle
-uint8_t noiseEnable = 0;
+uint8_t noiseEnable = 0;                     //Used to sound Buzzer
+uint8_t forceWDT=0;
 
 //UltraSonic Vars
 uint32_t ultraSonicRead1, ultraSonicRead2;    //Store timerA read for ultrasonic capcture
@@ -80,6 +81,7 @@ int main(void)
 
     uint8_t noInputReset = 0 , noInputState = 0;                          //used to reset LCD when user goes Idle
 
+    uint8_t buzzerNoise = 0 , tempNoise = 0;
     //inits
     push_btn_init();
     rotaryPinInit();                   //init rotary encoder
@@ -102,7 +104,7 @@ int main(void)
     triggerUltraSonic();    //trig pin for 10us
 
     //for testing speed read
-    changeMotorPWMspeed(2);            //Sets to mid speed
+
 
 
     readFullRTC(timeArray);            //Gets init time from RTC
@@ -118,6 +120,16 @@ int main(void)
     //Print Splash Screen
     buddyCorp();
     systick_delay_ms(1000);                 //delay to see splash screen for 1s
+
+
+
+
+    //Setting Up watchdog
+    MAP_SysCtl_setWDTTimeoutResetType(SYSCTL_SOFT_RESET);
+    MAP_WDT_A_initWatchdogTimer(WDT_A_CLOCKSOURCE_SMCLK,WDT_A_CLOCKITERATIONS_128M);
+    MAP_WDT_A_startTimer();
+
+
 
     while(1)
     {
@@ -164,18 +176,21 @@ int main(void)
                 break;
 
             case writeDateSetSubMenu:
-                userSelection = setDateSubMenu(direction, writeTimeToRTC);
+                userSelection = setDateSubMenu(direction, writeTimeToRTC,timeArray,noInputReset);
 
                 if(userSelection == 1)
                 {
                     nextState = writeIdleScreen;
                     //write new date to RTC
+                    writeDateOnly(writeTimeToRTC);
+                    readFullRTC(timeArray);//first read from RTC is a garbage read
+                    readFullRTC(timeArray);//real read
                 }
 
                 break;
 
             case writeErrorLogMenu:
-                userSelection = writeErrorMenu(direction);
+                userSelection = writeErrorMenu(direction,noInputReset);
 
                 if(userSelection == 1)
                     nextState = writeTempAlarm;//Write Temp error log
@@ -185,7 +200,7 @@ int main(void)
                 break;
 
             case writeTempAlarm:
-                userSelection = writeTempAlarmLog(direction);
+                userSelection = writeTempAlarmLog(direction,noInputReset);
 
                 if(userSelection == 1)
                     nextState = writeIdleScreen;
@@ -193,7 +208,7 @@ int main(void)
                 break;
 
             case writeSpeedAlarm:
-                userSelection = writeSpeedAlarmLog(direction);
+                userSelection = writeSpeedAlarmLog(direction,noInputReset);
 
                 if(userSelection == 1)
                     nextState = writeIdleScreen;
@@ -211,11 +226,11 @@ int main(void)
         if(nextState == noInputState)
         {
             noInputReset = 1;
-            noInputState = 99;
+            noInputState = 99;              //setting to some state that does not exist yet because 0 is being used
         }
         if(direction != 0)
             noInputCounter=0;
-        if(noInputCounter > 100)
+        if(noInputCounter > 300)//30sec
         {
             noInputCounter = 0;     //restart counter
             //noInputReset = 1;       //flag for reseting LCD screens
@@ -251,8 +266,8 @@ int main(void)
         {
             bumperDistance =  ((ultraSonicRead2*10)/12) /58;
             //Changes LED
-            if(bumperDistance >= 200) {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);proximityBannerAlarm(0);}
-            if(bumperDistance < 200)  {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);proximityBannerAlarm(1);}
+            if(bumperDistance >= 200) {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN1);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);proximityBannerAlarm(0); buzzerNoise = 0;}
+            if(bumperDistance < 200)  {MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN0);MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN1);proximityBannerAlarm(1); buzzerNoise = 1;}
 
             triggerUltraSonic();    //trig pin for 10us
             triggerFinished = 0;
@@ -261,14 +276,32 @@ int main(void)
 
         //changed alarm threshold to 24 for testing purposes
         if(RTCtemp <= 24)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
+        {
             tempAlarmCheck=1;
-        if(RTCtemp > 24 && tempAlarmCheck)
+            tempNoise=0;          //stop buzzer
+            //clear banner
+            tempBannerAlarm(0);
+        }
+            if(RTCtemp > 24 && tempAlarmCheck)
         {
             //send alarm to save in flash
             sprintf(alarmData,"%02x/%02x/%02x at %02x:%02x", timeArray[5],timeArray[4],timeArray[6],  timeArray[2],timeArray[1]);
             saveToFlash(alarmData, 1 );        //write a temp alarm to flash
-            tempAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
+            tempAlarmCheck = 0;               //used so that the alarm is not set continuously if temp stays high
+            tempNoise = 1;                    //start alarm
+            //print banner
+            tempBannerAlarm(1);
         }
+
+
+        if(tempNoise)
+            noiseEnable = 2;
+        else if(buzzerNoise)
+            noiseEnable = 1;
+        else
+            noiseEnable = 0;
+
+
 
 
         if(speed <= 85)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
@@ -285,7 +318,14 @@ int main(void)
         updateBacklight(normalizedADCRes, normalizedADCResBat);
 
 
+        changeMotorPWMspeed(setSpeed);
 
+        //reset Watchdog forceWDT used to force the watchdog to reset
+        if(forceWDT==1)
+        {
+            while(1);
+        }
+        MAP_WDT_A_clearTimer();
     }
 }
 
@@ -325,6 +365,12 @@ void push_btn_init(void)
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P1, GPIO_PIN4);
     MAP_GPIO_enableInterrupt(GPIO_PORT_P1, GPIO_PIN4);
     MAP_Interrupt_enableInterrupt(INT_PORT1);
+
+    //push button for changing speed on p6.4
+    MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_GPIO_enableInterrupt(GPIO_PORT_P6, GPIO_PIN4);
+    MAP_Interrupt_enableInterrupt(INT_PORT6);
 }
 
 
@@ -339,11 +385,11 @@ void PORT1_IRQHandler(void)
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P1, status);
 
     if(status & GPIO_PIN1){
-        nextDirection = 1;      //forward
+        forceWDT = 1;
     }
-    if(status & GPIO_PIN4){
-        nextDirection = 3;      //backwards
-    }
+//    if(status & GPIO_PIN4){
+//        nextDirection = 3;      //backwards
+//    }
 
 }
 
@@ -413,6 +459,15 @@ void PORT6_IRQHandler(void)
     {
         hallEffectMagnetCounts++;
     }
+
+    if (status & GPIO_PIN4)
+    {
+        if(setSpeed > 3)
+            setSpeed=0;
+        else
+            setSpeed++;
+    }
+
 }
 
 
@@ -440,6 +495,8 @@ void T32_INT1_IRQHandler(void)
     //used to kick users out of an entry screen to return them to idle
     //after 1minute
     noInputCounter++;
+
+    //Buzzer sounds
     if(noiseEnable == 0)
             {
             TIMER_A3->CCR[1] = 0;
@@ -461,9 +518,7 @@ void T32_INT1_IRQHandler(void)
                 beepz = 0;
                 on = 0;
                 }
-
         }
-
         if (noiseEnable == 2)
         {
             TIMER_A3->CCR[0] = 3841;
