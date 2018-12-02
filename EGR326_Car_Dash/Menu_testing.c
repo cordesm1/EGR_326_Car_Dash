@@ -257,8 +257,7 @@ int main(void)
         {
             topBannerPrint(RTCtemp,speed,timeArray);
         }
-        //Change speedometer
-        driveMotor(speed);
+
 
 
         //Ultra Sonic
@@ -302,6 +301,9 @@ int main(void)
             noiseEnable = 0;
 
 
+        //Change speedometer
+        driveMotor(speed);
+        changeMotorPWMspeed(setSpeed);
 
 
         if(speed <= 85)//used so that only one alarm is written when the temp is over 43C       could also trigger buzzer here?
@@ -318,7 +320,7 @@ int main(void)
         updateBacklight(normalizedADCRes, normalizedADCResBat);
 
 
-        changeMotorPWMspeed(setSpeed);
+
 
         //reset Watchdog forceWDT used to force the watchdog to reset
         if(forceWDT==1)

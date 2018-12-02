@@ -139,6 +139,11 @@ void driveMotor(int newSpeed)
 
     int cycles = newSpeed-oldSpeed;
 
+
+    //max input is 160
+    if(newSpeed > 159)
+        newSpeed = 160;
+
     oldSpeed = newSpeed;
 
 
