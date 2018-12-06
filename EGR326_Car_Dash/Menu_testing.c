@@ -40,7 +40,7 @@ Timer_A_PWMConfig pwmConfigSounder =
 uint32_t SMCLKfreq,MCLKfreq; //Variable to store the clock frequencies
 uint8_t nextDirection = 0; //no selections
 uint8_t contact1 = 0, contact2 = 0, direction = 0;              //Rotary encoder vars
-uint8_t hallEffectMagnetCounts = 0 , speed = 0, setSpeed=0;                 //variable for counting how many times the magnet passes the hall effect
+uint8_t hallEffectMagnetCounts = 0 , speed = 0, setSpeed=0, increaseSpeed = 0;                 //variable for counting how many times the magnet passes the hall effect
 volatile float normalizedADCRes, normalizedADCResBat;
 static uint16_t resultsBuffer[2];
 uint16_t noInputCounter = 0;                 //variabls used for detecting idle
@@ -83,6 +83,10 @@ int main(void)
 
     uint8_t buzzerNoise = 0 , tempNoise = 0;
     //inits
+    //Print Splash Screen
+    ADCBacklightInit();       //init ADC module and Backlight PWM
+    buddyCorp();
+    systick_delay_ms(1000);                 //delay to see splash screen for 1s
     push_btn_init();
     rotaryPinInit();                   //init rotary encoder
     initRTC();                         //starts RTC on P1.6 and P1.7
@@ -91,7 +95,9 @@ int main(void)
     initHallEffectPins();     //init just read the name
     initSpeedometer();        //init just read name
     initBatteryometer();
-    ADCBacklightInit();       //init ADC module and Backlight PWM
+    driveBoth(160);
+    driveBoth(0);
+
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P7, GPIO_PIN6);
     MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P7, GPIO_PIN6);
     MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P10, GPIO_PIN5, GPIO_PRIMARY_MODULE_FUNCTION); //Sounder Init
@@ -316,6 +322,16 @@ int main(void)
             speedAlarmCheck = 0;                 //used so that the alarm is not set continuously if temp stays high
         }
 
+        if(increaseSpeed)
+        {
+            if(setSpeed > 2)
+                setSpeed = 0;
+            else
+                setSpeed++;
+
+            increaseSpeed = 0;
+            systick_delay_ms(10);
+        }
 
         updateBacklight(normalizedADCRes, normalizedADCResBat);
 
@@ -327,6 +343,8 @@ int main(void)
         {
             while(1);
         }
+
+
         MAP_WDT_A_clearTimer();
     }
 }
@@ -373,11 +391,36 @@ void push_btn_init(void)
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P6, GPIO_PIN4);
     MAP_GPIO_enableInterrupt(GPIO_PORT_P6, GPIO_PIN4);
     MAP_Interrupt_enableInterrupt(INT_PORT6);
+
+    //p4.6 btn
+    MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P4, GPIO_PIN6);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P4, GPIO_PIN6);
+    MAP_GPIO_enableInterrupt(GPIO_PORT_P4, GPIO_PIN6);
+    MAP_Interrupt_enableInterrupt(INT_PORT4);
 }
 
 
 
 /*-------------------------------------------------------------INTERRUPTS-------------------------------------------------------------*/
+
+
+void PORT4_IRQHandler(void)
+{
+    uint32_t status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
+
+    if (status & GPIO_PIN6)
+        {
+
+            increaseSpeed = 1;
+    //        if(setSpeed > 3)
+    //            setSpeed = 0;
+    //        else
+    //            setSpeed++;
+        }
+}
+
+
+
 
 
 
@@ -464,10 +507,12 @@ void PORT6_IRQHandler(void)
 
     if (status & GPIO_PIN4)
     {
-        if(setSpeed > 3)
-            setSpeed=0;
-        else
-            setSpeed++;
+
+        increaseSpeed = 1;
+//        if(setSpeed > 3)
+//            setSpeed = 0;
+//        else
+//            setSpeed++;
     }
 
 }
@@ -482,7 +527,7 @@ void T32_INT1_IRQHandler(void)
 
 
     MAP_Timer32_clearInterruptFlag(TIMER32_BASE);
-    speed = hallEffectMagnetCounts;
+    speed = ((hallEffectMagnetCounts) * 3);
     hallEffectMagnetCounts = 0;
     MAP_Timer32_setCount(TIMER32_BASE,4800000);
     MAP_Timer32_startTimer(TIMER32_BASE, true);
@@ -530,7 +575,6 @@ void T32_INT1_IRQHandler(void)
                 TIMER_A3->CCR[1] = 1916;
             on = !on;
         }
-
 }
 
 
@@ -575,5 +619,6 @@ void ADC14_IRQHandler(void)
         }
         normalizedADCRes = (resultsBuffer[0]) / 16384.0;
         normalizedADCResBat = ((resultsBuffer[1]) / 16384.0)*(3.3*1.065*4.108);
+        if(normalizedADCResBat > 9.000) normalizedADCResBat = 9.000;
 
 }

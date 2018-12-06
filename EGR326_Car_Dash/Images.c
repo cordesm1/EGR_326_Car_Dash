@@ -1334,9 +1334,9 @@ Source(s):    none
 uint8_t writeMenu(uint8_t select , uint8_t reset)
 {
 
-    char menuItem [4][10] = {"Set Time","Set Date","Error Log","Extra"};
+    char menuItem [4][10] = {"Set Time","Set Date","Error Log","Return"};
     uint8_t i=0, xstart=0, ystart=10, y=0;
-    uint8_t s1=8 , s2=8, s3=9, s4=5, lines = 4;                         //represents the size of the menu option to keep them centered
+    uint8_t s1=8 , s2=8, s3=9, s4=6, lines = 4;                         //represents the size of the menu option to keep them centered
     uint16_t backGround = ST7735_Color565(0, 0, 0);                     //Black background
     uint16_t textColor  = ST7735_Color565(25, 255, 255);                //text color
     uint16_t selectColor= ST7735_Color565(0, 0, 0);

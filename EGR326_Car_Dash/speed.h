@@ -16,6 +16,7 @@ void initSpeedometer(void);
 void driveMotor(int newSpeed);
 void initBatteryometer(void);
 void driveBatMotor(int newSpeed);
+void driveMotor(int newSpeed);
 
 
 #endif /* SPEED_H_ */
