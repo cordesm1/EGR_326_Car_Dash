@@ -58,6 +58,7 @@ extern unsigned long __STACK_END;
 
 /* To be added by user */
 extern void PORT1_IRQHandler(void);
+extern void PORT4_IRQHandler(void);
 extern void PORT6_IRQHandler(void);
 extern void T32_INT1_IRQHandler(void);
 extern void TA2_N_IRQHandler(void);
@@ -125,7 +126,7 @@ void (* const interruptVectors[])(void) =
     PORT1_IRQHandler,                             /* PORT1 ISR                 */
     defaultISR,                             /* PORT2 ISR                 */
     defaultISR,                             /* PORT3 ISR                 */
-    defaultISR,                             /* PORT4 ISR                 */
+    PORT4_IRQHandler,                             /* PORT4 ISR                 */
     defaultISR,                             /* PORT5 ISR                 */
     PORT6_IRQHandler,                             /* PORT6 ISR                 */
     defaultISR,                             /* Reserved 41               */

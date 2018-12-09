@@ -285,8 +285,12 @@ int main(void)
             tempAlarmCheck=1;
             tempNoise=0;          //stop buzzer
             //clear banner
-            tempBannerAlarm(0);
+
         }
+
+        if(RTCtemp > 24)
+            tempBannerAlarm(1);                 //prints banner whenever the temp is above 24
+
             if(RTCtemp > 24 && tempAlarmCheck)
         {
             //send alarm to save in flash
@@ -614,11 +618,10 @@ void ADC14_IRQHandler(void)
     MAP_ADC14_clearInterruptFlag(status);
 
     if(status & ADC_INT1)
-        {
-            MAP_ADC14_getMultiSequenceResult(resultsBuffer);
-        }
-        normalizedADCRes = (resultsBuffer[0]) / 16384.0;
-        normalizedADCResBat = ((resultsBuffer[1]) / 16384.0)*(3.3*1.065*4.108);
-        if(normalizedADCResBat > 9.000) normalizedADCResBat = 9.000;
-
+    {
+        MAP_ADC14_getMultiSequenceResult(resultsBuffer);
+    }
+    normalizedADCRes = (resultsBuffer[0]) / 16384.0;
+    normalizedADCResBat = ((resultsBuffer[1]) / 16384.0)*(11.75);
+    if(normalizedADCResBat > 9.000) normalizedADCResBat = 9.000;
 }
